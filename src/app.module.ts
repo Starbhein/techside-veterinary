@@ -3,6 +3,8 @@ import { ConfigModule } from '@nestjs/config';
 import { envSchema } from './config/env.validation';
 import { PrismaModule } from './prisma/prisma.module';
 import { MxDivisionesModule } from './mx-divisiones/mx-divisiones.module';
+import { AuthModule } from './auth/auth.module';
+import { UsuariosModule } from './usuarios/usuarios.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
@@ -14,6 +16,8 @@ import { AppService } from './app.service';
     }),
     PrismaModule,
     MxDivisionesModule,
+    AuthModule,
+    UsuariosModule,
   ],
   controllers: [AppController],
   providers: [AppService],
