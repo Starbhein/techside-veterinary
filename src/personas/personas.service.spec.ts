@@ -34,11 +34,11 @@ describe('PersonasService', () => {
         nombreCompleto: 'Juan Pérez',
         telefono: '5215512345678',
         calle: 'Av. Principal 100',
-        sucursal: { connect: { id: 1 } },
+        sucursal: { connect: { id: '00000000-0000-4000-8000-000000000001' } },
       };
 
       const mockPersona = {
-        id: 1,
+        id: '00000000-0000-4000-8000-000000000001',
         ...createInput,
         telefonoSecundario: null,
         numExterior: null,

@@ -51,13 +51,22 @@ async function main() {
     });
   }
 
-  // 2. Seed first admin
+  // 2. Look up first active branch dynamically
+  const branch = await prisma.mxDivision.findUnique({
+    where: { clave: 'VTC-001' },
+  });
+
+  if (!branch) {
+    throw new Error('Branch VTC-001 not found');
+  }
+
+  // 3. Seed first admin
   const adminPersona = await prisma.persona.create({
     data: {
       nombreCompleto: 'Administrador Sistema',
       telefono: '55500000000',
       calle: 'Oficina Central',
-      sucursalId: 1,
+      sucursalId: branch.id,
     },
   });
 

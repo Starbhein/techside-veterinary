@@ -48,6 +48,7 @@ describe('AuthService', () => {
     $transaction: jest.fn(),
     persona: {
       create: jest.fn(),
+      update: jest.fn(),
     },
     usuario: {
       create: jest.fn(),
@@ -82,13 +83,13 @@ describe('AuthService', () => {
   describe('login', () => {
     it('should return accessToken and user for valid credentials', async () => {
       const mockUser = {
-        id: 1,
+        id: '00000000-0000-4000-8000-000000000001',
         email: 'test@example.com',
         telefono: '55512345678',
         passwordHash: 'hashed',
         rol: 'cliente',
         status: 'activo',
-        personaId: 1,
+        personaId: '00000000-0000-4000-8000-000000000001',
       };
       mockUsuariosService.findByEmailOrPhone.mockResolvedValue(mockUser);
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
@@ -103,14 +104,14 @@ describe('AuthService', () => {
       );
       expect(bcrypt.compare).toHaveBeenCalledWith('Password123', 'hashed');
       expect(mockJwtService.sign).toHaveBeenCalledWith({
-        sub: 1,
+        sub: '00000000-0000-4000-8000-000000000001',
         email: 'test@example.com',
         rol: 'cliente',
       });
       expect(result).toEqual({
         accessToken: 'mock-token',
         user: {
-          id: 1,
+          id: '00000000-0000-4000-8000-000000000001',
           email: 'test@example.com',
           rol: 'cliente',
         },
@@ -135,13 +136,13 @@ describe('AuthService', () => {
 
     it('should throw 401 for inactive user without bcrypt compare', async () => {
       const mockUser = {
-        id: 1,
+        id: '00000000-0000-4000-8000-000000000001',
         email: 'inactive@example.com',
         telefono: '55512345678',
         passwordHash: 'hashed',
         rol: 'cliente',
         status: 'inactivo',
-        personaId: 1,
+        personaId: '00000000-0000-4000-8000-000000000001',
       };
       mockUsuariosService.findByEmailOrPhone.mockResolvedValue(mockUser);
 
@@ -160,13 +161,13 @@ describe('AuthService', () => {
 
     it('should throw 401 for wrong password', async () => {
       const mockUser = {
-        id: 1,
+        id: '00000000-0000-4000-8000-000000000001',
         email: 'test@example.com',
         telefono: '55512345678',
         passwordHash: 'hashed',
         rol: 'cliente',
         status: 'activo',
-        personaId: 1,
+        personaId: '00000000-0000-4000-8000-000000000001',
       };
       mockUsuariosService.findByEmailOrPhone.mockResolvedValue(mockUser);
       (bcrypt.compare as jest.Mock).mockResolvedValue(false);
@@ -196,7 +197,7 @@ describe('AuthService', () => {
       calle: 'Av. Principal 100',
       numExterior: undefined,
       numInterior: undefined,
-      sucursalId: 1,
+      sucursalId: '00000000-0000-4000-8000-000000000001',
     };
 
     const mockAddressDoc: Express.Multer.File = {
@@ -231,7 +232,10 @@ describe('AuthService', () => {
       mockUsuariosService.findByEmailOrPhone.mockImplementation(
         (value: string) => {
           if (value === 'new@example.com') {
-            return Promise.resolve({ id: 1, email: 'new@example.com' });
+            return Promise.resolve({
+              id: '00000000-0000-4000-8000-000000000001',
+              email: 'new@example.com',
+            });
           }
           return Promise.resolve(null);
         },
@@ -257,7 +261,10 @@ describe('AuthService', () => {
       mockUsuariosService.findByEmailOrPhone.mockImplementation(
         (value: string) => {
           if (value === '5215512345678') {
-            return Promise.resolve({ id: 1, telefono: '5215512345678' });
+            return Promise.resolve({
+              id: '00000000-0000-4000-8000-000000000001',
+              telefono: '5215512345678',
+            });
           }
           return Promise.resolve(null);
         },
@@ -295,7 +302,7 @@ describe('AuthService', () => {
     it('should register new user and send activation email', async () => {
       mockUsuariosService.findByEmailOrPhone.mockResolvedValue(null);
       mockMxDivisionesService.findById.mockResolvedValue({
-        id: 1,
+        id: '00000000-0000-4000-8000-000000000001',
         activo: true,
       });
       mockArchivosService.saveFile
@@ -308,9 +315,20 @@ describe('AuthService', () => {
         return callback(mockPrismaService);
       });
 
-      mockPrismaService.persona.create.mockResolvedValue({ id: 10 });
-      mockPrismaService.usuario.create.mockResolvedValue({ id: 20 });
-      mockPrismaService.archivo.create.mockResolvedValue({ id: 30 });
+      mockPrismaService.persona.create.mockResolvedValue({
+        id: '00000000-0000-4000-8000-00000000000a',
+      });
+      mockPrismaService.usuario.create.mockResolvedValue({
+        id: '00000000-0000-4000-8000-000000000014',
+      });
+      mockPrismaService.archivo.create
+        .mockResolvedValueOnce({
+          id: '00000000-0000-4000-8000-00000000001e',
+        })
+        .mockResolvedValueOnce({
+          id: '00000000-0000-4000-8000-00000000001f',
+        });
+      mockPrismaService.persona.update.mockResolvedValue({});
 
       const result = await service.register(validDto, {
         addressDoc: mockAddressDoc,
@@ -332,7 +350,7 @@ describe('AuthService', () => {
     it('should rollback files on transaction failure', async () => {
       mockUsuariosService.findByEmailOrPhone.mockResolvedValue(null);
       mockMxDivisionesService.findById.mockResolvedValue({
-        id: 1,
+        id: '00000000-0000-4000-8000-000000000001',
         activo: true,
       });
       mockArchivosService.saveFile
@@ -359,7 +377,7 @@ describe('AuthService', () => {
     it('should throw BadRequestException when files are missing', async () => {
       mockUsuariosService.findByEmailOrPhone.mockResolvedValue(null);
       mockMxDivisionesService.findById.mockResolvedValue({
-        id: 1,
+        id: '00000000-0000-4000-8000-000000000001',
         activo: true,
       });
 

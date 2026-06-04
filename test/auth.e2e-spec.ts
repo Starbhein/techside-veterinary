@@ -12,7 +12,7 @@ import { UsuariosService } from '../src/usuarios/usuarios.service';
 
 interface LoginResponseBody {
   accessToken: string;
-  user: { id: number; email: string; rol: string };
+  user: { id: string; email: string; rol: string };
 }
 
 jest.mock('bcrypt', () => ({
@@ -50,17 +50,32 @@ describe('Auth (e2e)', () => {
       ),
       $disconnect: jest.fn(),
       mxDivision: {
-        findFirst: jest.fn().mockResolvedValue({ id: 1, activo: true }),
+        findFirst: jest.fn().mockResolvedValue({
+          id: '00000000-0000-4000-8000-000000000001',
+          activo: true,
+        }),
       },
       persona: {
-        create: jest.fn().mockResolvedValue({ id: 10 }),
+        create: jest.fn().mockResolvedValue({
+          id: '00000000-0000-4000-8000-00000000000a',
+        }),
+        update: jest.fn().mockResolvedValue({}),
       },
       usuario: {
         findUnique: jest.fn(),
-        create: jest.fn().mockResolvedValue({ id: 20 }),
+        create: jest.fn().mockResolvedValue({
+          id: '00000000-0000-4000-8000-000000000014',
+        }),
       },
       archivo: {
-        create: jest.fn().mockResolvedValue({ id: 30 }),
+        create: jest
+          .fn()
+          .mockResolvedValueOnce({
+            id: '00000000-0000-4000-8000-00000000001e',
+          })
+          .mockResolvedValueOnce({
+            id: '00000000-0000-4000-8000-00000000001f',
+          }),
       },
     };
 
@@ -107,7 +122,7 @@ describe('Auth (e2e)', () => {
         .field('nombreCompleto', 'Test Cliente')
         .field('telefono', '15512345678')
         .field('calle', 'Calle Test')
-        .field('sucursalId', '1')
+        .field('sucursalId', '00000000-0000-4000-8000-000000000001')
         .attach('addressDoc', Buffer.from('pdf'), 'direccion.pdf')
         .attach('identityDoc', Buffer.from('jpg'), 'identidad.jpg');
 
@@ -121,7 +136,7 @@ describe('Auth (e2e)', () => {
       mockUsuarios.findByEmailOrPhone.mockImplementation((value: string) => {
         if (value === 'duplicate@test.com') {
           return Promise.resolve({
-            id: 1,
+            id: '00000000-0000-4000-8000-000000000001',
             email: 'duplicate@test.com',
           });
         }
@@ -136,7 +151,7 @@ describe('Auth (e2e)', () => {
         .field('nombreCompleto', 'Test')
         .field('telefono', '15512345678')
         .field('calle', 'Calle')
-        .field('sucursalId', '1')
+        .field('sucursalId', '00000000-0000-4000-8000-000000000001')
         .attach('addressDoc', Buffer.from('pdf'), 'direccion.pdf')
         .attach('identityDoc', Buffer.from('jpg'), 'identidad.jpg');
 
@@ -155,7 +170,7 @@ describe('Auth (e2e)', () => {
         .field('nombreCompleto', 'Test')
         .field('telefono', '15512345678')
         .field('calle', 'Calle')
-        .field('sucursalId', '1')
+        .field('sucursalId', '00000000-0000-4000-8000-000000000001')
         .attach('addressDoc', Buffer.from('exe'), 'virus.exe')
         .attach('identityDoc', Buffer.from('jpg'), 'identidad.jpg');
 
@@ -178,13 +193,13 @@ describe('Auth (e2e)', () => {
   describe('POST /auth/login', () => {
     it('should return 200 with accessToken for valid credentials', async () => {
       mockUsuarios.findByEmailOrPhone.mockResolvedValue({
-        id: 1,
+        id: '00000000-0000-4000-8000-000000000001',
         email: 'test@example.com',
         telefono: '55512345678',
         passwordHash: 'hashed',
         rol: 'cliente',
         status: 'activo',
-        personaId: 1,
+        personaId: '00000000-0000-4000-8000-000000000001',
       });
 
       const response = await request(app.getHttpServer())
@@ -200,7 +215,7 @@ describe('Auth (e2e)', () => {
       expect(body).toHaveProperty('user');
       expect(body.user).toEqual(
         expect.objectContaining({
-          id: 1,
+          id: '00000000-0000-4000-8000-000000000001',
           email: 'test@example.com',
           rol: 'cliente',
         }),
@@ -230,13 +245,13 @@ describe('Auth (e2e)', () => {
   describe('JWT protected endpoints', () => {
     it('should allow access with valid JWT', async () => {
       mockUsuarios.findByEmailOrPhone.mockResolvedValue({
-        id: 1,
+        id: '00000000-0000-4000-8000-000000000001',
         email: 'test@example.com',
         telefono: '55512345678',
         passwordHash: 'hashed',
         rol: 'cliente',
         status: 'activo',
-        personaId: 1,
+        personaId: '00000000-0000-4000-8000-000000000001',
       });
 
       const loginResponse = await request(app.getHttpServer())
@@ -268,13 +283,13 @@ describe('Auth (e2e)', () => {
 
     it('should return 403 when cliente accesses admin endpoint', async () => {
       mockUsuarios.findByEmailOrPhone.mockResolvedValue({
-        id: 1,
+        id: '00000000-0000-4000-8000-000000000001',
         email: 'cliente@example.com',
         telefono: '55512345678',
         passwordHash: 'hashed',
         rol: 'cliente',
         status: 'activo',
-        personaId: 1,
+        personaId: '00000000-0000-4000-8000-000000000001',
       });
 
       const loginResponse = await request(app.getHttpServer())
@@ -301,13 +316,13 @@ describe('Auth (e2e)', () => {
 
     it('should allow admin to access admin endpoint', async () => {
       mockUsuarios.findByEmailOrPhone.mockResolvedValue({
-        id: 1,
+        id: '00000000-0000-4000-8000-000000000001',
         email: 'admin@example.com',
         telefono: '55500000000',
         passwordHash: 'hashed',
         rol: 'admin',
         status: 'activo',
-        personaId: 1,
+        personaId: '00000000-0000-4000-8000-000000000001',
       });
 
       const loginResponse = await request(app.getHttpServer())

@@ -12,7 +12,7 @@ export class MxDivisionesService {
     });
   }
 
-  async findById(id: number): Promise<MxDivision> {
+  async findById(id: string): Promise<MxDivision> {
     const division = await this.prisma.mxDivision.findFirst({
       where: { id, activo: true },
     });

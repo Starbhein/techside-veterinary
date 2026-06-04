@@ -29,10 +29,7 @@ export const registerSchema = z.object({
     .max(200, 'La calle no puede exceder 200 caracteres'),
   numExterior: z.string().max(20).optional(),
   numInterior: z.string().max(20).optional(),
-  sucursalId: z.coerce
-    .number()
-    .int('La sucursal debe ser un número entero')
-    .positive('La sucursal debe ser mayor a cero'),
+  sucursalId: z.string().uuid('La sucursal debe ser un UUID válido'),
 });
 
 export type RegisterDto = z.infer<typeof registerSchema>;

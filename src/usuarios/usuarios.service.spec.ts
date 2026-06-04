@@ -40,18 +40,18 @@ describe('UsuariosService', () => {
   describe('findByEmailOrPhone', () => {
     it('should find user by email (case-insensitive match by lowercasing)', async () => {
       const mockUser = {
-        id: 1,
+        id: '00000000-0000-4000-8000-000000000001',
         email: 'test@example.com',
         telefono: '55512345678',
         passwordHash: 'hash',
         rol: 'cliente',
         status: 'activo',
-        personaId: 1,
+        personaId: '00000000-0000-4000-8000-000000000001',
         persona: {
-          id: 1,
+          id: '00000000-0000-4000-8000-000000000001',
           nombreCompleto: 'Test',
           telefono: '55512345678',
-          sucursalId: 1,
+          sucursalId: '00000000-0000-4000-8000-000000000001',
         },
       };
       mockPrisma.usuario.findUnique.mockResolvedValue(mockUser);
@@ -76,18 +76,18 @@ describe('UsuariosService', () => {
 
     it('should find user by phone', async () => {
       const mockUser = {
-        id: 2,
+        id: '00000000-0000-4000-8000-000000000002',
         email: 'other@example.com',
         telefono: '55598765432',
         passwordHash: 'hash',
         rol: 'medico',
         status: 'activo',
-        personaId: 2,
+        personaId: '00000000-0000-4000-8000-000000000002',
         persona: {
-          id: 2,
+          id: '00000000-0000-4000-8000-000000000002',
           nombreCompleto: 'Other',
           telefono: '55598765432',
-          sucursalId: 1,
+          sucursalId: '00000000-0000-4000-8000-000000000001',
         },
       };
       mockPrisma.usuario.findUnique.mockResolvedValue(mockUser);
@@ -135,7 +135,10 @@ describe('UsuariosService', () => {
   describe('createUser', () => {
     it('should hash password before creating user', async () => {
       (bcrypt.hash as jest.Mock).mockResolvedValue('hashedPassword');
-      const mockUser = { id: 1, email: 'test@example.com' };
+      const mockUser = {
+        id: '00000000-0000-4000-8000-000000000001',
+        email: 'test@example.com',
+      };
       mockPrisma.usuario.create.mockResolvedValue(mockUser);
 
       const result = await service.createUser({
@@ -143,7 +146,7 @@ describe('UsuariosService', () => {
         telefono: '55512345678',
         passwordHash: 'plainPassword',
         rol: 'cliente',
-        persona: { connect: { id: 1 } },
+        persona: { connect: { id: '00000000-0000-4000-8000-000000000001' } },
       } as never);
 
       expect(bcrypt.hash).toHaveBeenCalledWith('plainPassword', 12);
@@ -153,7 +156,7 @@ describe('UsuariosService', () => {
           telefono: '55512345678',
           passwordHash: 'hashedPassword',
           rol: 'cliente',
-          persona: { connect: { id: 1 } },
+          persona: { connect: { id: '00000000-0000-4000-8000-000000000001' } },
         },
       });
       expect(result).toEqual(mockUser);

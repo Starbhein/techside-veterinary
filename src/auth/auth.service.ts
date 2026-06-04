@@ -14,7 +14,6 @@ import { PrismaService } from '../prisma/prisma.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { JwtPayload } from './interfaces/jwt-payload.interface';
-import { ArchivoTipo } from '@prisma/client';
 
 @Injectable()
 export class AuthService {
@@ -30,7 +29,7 @@ export class AuthService {
 
   async login(dto: LoginDto): Promise<{
     accessToken: string;
-    user: { id: number; email: string; rol: string };
+    user: { id: string; email: string; rol: string };
   }> {
     const user = await this.usuariosService.findByEmailOrPhone(
       dto.emailOrPhone,
@@ -146,25 +145,30 @@ export class AuthService {
         });
 
         // Create Archivo records
-        await tx.archivo.create({
+        const addressArchivo = await tx.archivo.create({
           data: {
-            personaId: persona.id,
-            tipo: ArchivoTipo.validacion_direccion,
-            nombre: files.addressDoc!.originalname,
-            mimeType: files.addressDoc!.mimetype,
-            tamañoBytes: files.addressDoc!.size,
-            ruta: addressPath,
+            url: addressPath,
+            nombreArchivo: files.addressDoc!.originalname,
+            mime: files.addressDoc!.mimetype,
+            tamano: files.addressDoc!.size,
           },
         });
 
-        await tx.archivo.create({
+        const identityArchivo = await tx.archivo.create({
           data: {
-            personaId: persona.id,
-            tipo: ArchivoTipo.validacion_identidad,
-            nombre: files.identityDoc!.originalname,
-            mimeType: files.identityDoc!.mimetype,
-            tamañoBytes: files.identityDoc!.size,
-            ruta: identityPath,
+            url: identityPath,
+            nombreArchivo: files.identityDoc!.originalname,
+            mime: files.identityDoc!.mimetype,
+            tamano: files.identityDoc!.size,
+          },
+        });
+
+        // Link archivo IDs to persona
+        await tx.persona.update({
+          where: { id: persona.id },
+          data: {
+            proofAddressId: addressArchivo.id,
+            proofIdId: identityArchivo.id,
           },
         });
 

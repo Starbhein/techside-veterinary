@@ -28,7 +28,7 @@ describe('MxDivisionesController', () => {
     it('should delegate to service.findAll', async () => {
       const divisions: MxDivision[] = [
         {
-          id: 1,
+          id: '00000000-0000-4000-8000-000000000001',
           nombre: 'Centro',
           clave: 'VTC-001',
           direccion: null,
@@ -49,7 +49,7 @@ describe('MxDivisionesController', () => {
   describe('findById', () => {
     it('should delegate to service.findById with parsed id', async () => {
       const division: MxDivision = {
-        id: 2,
+        id: '00000000-0000-4000-8000-000000000002',
         nombre: 'Norte',
         clave: 'VTN-002',
         direccion: null,
@@ -60,9 +60,13 @@ describe('MxDivisionesController', () => {
       };
       mockService.findById.mockResolvedValue(division);
 
-      const result = await controller.findById(2);
+      const result = await controller.findById(
+        '00000000-0000-4000-8000-000000000002',
+      );
       expect(result).toEqual(division);
-      expect(mockService.findById).toHaveBeenCalledWith(2);
+      expect(mockService.findById).toHaveBeenCalledWith(
+        '00000000-0000-4000-8000-000000000002',
+      );
     });
   });
 });

@@ -33,7 +33,7 @@ describe('MxDivisionesService', () => {
     it('should return only active divisions', async () => {
       const divisions: MxDivision[] = [
         {
-          id: 1,
+          id: '00000000-0000-4000-8000-000000000001',
           nombre: 'Centro',
           clave: 'VTC-001',
           direccion: null,
@@ -56,7 +56,7 @@ describe('MxDivisionesService', () => {
   describe('findById', () => {
     it('should return an active division by id', async () => {
       const division: MxDivision = {
-        id: 1,
+        id: '00000000-0000-4000-8000-000000000001',
         nombre: 'Centro',
         clave: 'VTC-001',
         direccion: null,
@@ -67,19 +67,23 @@ describe('MxDivisionesService', () => {
       };
       mockPrismaService.mxDivision.findFirst.mockResolvedValue(division);
 
-      const result = await service.findById(1);
+      const result = await service.findById(
+        '00000000-0000-4000-8000-000000000001',
+      );
       expect(result).toEqual(division);
       expect(mockPrismaService.mxDivision.findFirst).toHaveBeenCalledWith({
-        where: { id: 1, activo: true },
+        where: { id: '00000000-0000-4000-8000-000000000001', activo: true },
       });
     });
 
     it('should throw NotFoundException for inactive or non-existent id', async () => {
       mockPrismaService.mxDivision.findFirst.mockResolvedValue(null);
 
-      await expect(service.findById(999)).rejects.toThrow(NotFoundException);
+      await expect(
+        service.findById('00000000-0000-4000-8000-0000000003e7'),
+      ).rejects.toThrow(NotFoundException);
       expect(mockPrismaService.mxDivision.findFirst).toHaveBeenCalledWith({
-        where: { id: 999, activo: true },
+        where: { id: '00000000-0000-4000-8000-0000000003e7', activo: true },
       });
     });
   });
