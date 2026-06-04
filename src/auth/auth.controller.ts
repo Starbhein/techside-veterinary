@@ -63,7 +63,7 @@ export class AuthController {
   )
   async register(
     @Body() body: Record<string, unknown>,
-    @CurrentUser() user?: { sub: number; email: string; rol: Rol },
+    @CurrentUser() user?: { sub: string; email: string; rol: Rol },
     @UploadedFiles()
     files?: {
       addressDoc?: Express.Multer.File[];

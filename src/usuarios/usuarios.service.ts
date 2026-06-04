@@ -15,10 +15,10 @@ export class UsuariosService {
   async findByEmailOrPhone(emailOrPhone: string): Promise<
     | (Usuario & {
         persona: {
-          id: number;
+          id: string;
           nombreCompleto: string;
           telefono: string;
-          sucursalId: number;
+          sucursalId: string;
         };
       })
     | null

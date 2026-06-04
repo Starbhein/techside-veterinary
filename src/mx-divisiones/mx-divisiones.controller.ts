@@ -1,4 +1,4 @@
-import { Controller, Get, Param, ParseIntPipe } from '@nestjs/common';
+import { Controller, Get, Param, ParseUUIDPipe } from '@nestjs/common';
 import { MxDivisionesService } from './mx-divisiones.service';
 import { MxDivision } from '@prisma/client';
 
@@ -12,7 +12,7 @@ export class MxDivisionesController {
   }
 
   @Get(':id')
-  async findById(@Param('id', ParseIntPipe) id: number): Promise<MxDivision> {
+  async findById(@Param('id', ParseUUIDPipe) id: string): Promise<MxDivision> {
     return this.service.findById(id);
   }
 }

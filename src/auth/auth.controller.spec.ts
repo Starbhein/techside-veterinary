@@ -19,7 +19,7 @@ describe('AuthController', () => {
     register: jest.fn(),
   };
 
-  let mockUser: { sub: number; email: string; rol: Rol } | undefined =
+  let mockUser: { sub: string; email: string; rol: Rol } | undefined =
     undefined;
 
   beforeEach(async () => {
@@ -61,7 +61,11 @@ describe('AuthController', () => {
     it('should return 200 for valid credentials', async () => {
       mockAuthService.login.mockResolvedValue({
         accessToken: 'valid-token',
-        user: { id: 1, email: 'test@example.com', rol: 'cliente' },
+        user: {
+          id: '00000000-0000-4000-8000-000000000001',
+          email: 'test@example.com',
+          rol: 'cliente',
+        },
       });
 
       const response = await request(app.getHttpServer())
@@ -71,7 +75,11 @@ describe('AuthController', () => {
       expect(response.status).toBe(200);
       expect(response.body).toEqual({
         accessToken: 'valid-token',
-        user: { id: 1, email: 'test@example.com', rol: 'cliente' },
+        user: {
+          id: '00000000-0000-4000-8000-000000000001',
+          email: 'test@example.com',
+          rol: 'cliente',
+        },
       });
     });
 
@@ -124,7 +132,7 @@ describe('AuthController', () => {
         .field('nombreCompleto', 'Juan Pérez')
         .field('telefono', '15512345678')
         .field('calle', 'Av. Principal 100')
-        .field('sucursalId', '1')
+        .field('sucursalId', '00000000-0000-4000-8000-000000000001')
         .attach('addressDoc', Buffer.from('pdf'), 'direccion.pdf')
         .attach('identityDoc', Buffer.from('jpg'), 'identidad.jpg');
 
@@ -144,7 +152,7 @@ describe('AuthController', () => {
         .field('nombreCompleto', 'Dr. Juan')
         .field('telefono', '15512345678')
         .field('calle', 'Av. Principal 100')
-        .field('sucursalId', '1')
+        .field('sucursalId', '00000000-0000-4000-8000-000000000001')
         .attach('addressDoc', Buffer.from('pdf'), 'direccion.pdf')
         .attach('identityDoc', Buffer.from('jpg'), 'identidad.jpg');
 
@@ -156,7 +164,11 @@ describe('AuthController', () => {
     });
 
     it('should return 201 for medico registered by admin', async () => {
-      mockUser = { sub: 1, email: 'admin@vetec.local', rol: 'admin' };
+      mockUser = {
+        sub: '00000000-0000-4000-8000-000000000001',
+        email: 'admin@vetec.local',
+        rol: 'admin',
+      };
       mockAuthService.register.mockResolvedValue({
         message: 'Te enviamos un correo para continuar...',
       });
@@ -169,7 +181,7 @@ describe('AuthController', () => {
         .field('nombreCompleto', 'Dr. Juan')
         .field('telefono', '15512345678')
         .field('calle', 'Av. Principal 100')
-        .field('sucursalId', '1')
+        .field('sucursalId', '00000000-0000-4000-8000-000000000001')
         .attach('addressDoc', Buffer.from('pdf'), 'direccion.pdf')
         .attach('identityDoc', Buffer.from('jpg'), 'identidad.jpg');
 
@@ -181,7 +193,11 @@ describe('AuthController', () => {
     });
 
     it('should return 201 generic message for admin by medico (hidden failure)', async () => {
-      mockUser = { sub: 2, email: 'medico@vetec.local', rol: 'medico' };
+      mockUser = {
+        sub: '00000000-0000-4000-8000-000000000002',
+        email: 'medico@vetec.local',
+        rol: 'medico',
+      };
 
       const response = await request(app.getHttpServer())
         .post('/auth/register')
@@ -191,7 +207,7 @@ describe('AuthController', () => {
         .field('nombreCompleto', 'Admin Nuevo')
         .field('telefono', '15512345678')
         .field('calle', 'Av. Principal 100')
-        .field('sucursalId', '1')
+        .field('sucursalId', '00000000-0000-4000-8000-000000000001')
         .attach('addressDoc', Buffer.from('pdf'), 'direccion.pdf')
         .attach('identityDoc', Buffer.from('jpg'), 'identidad.jpg');
 
@@ -203,7 +219,11 @@ describe('AuthController', () => {
     });
 
     it('should return 201 for admin registered by admin', async () => {
-      mockUser = { sub: 1, email: 'admin@vetec.local', rol: 'admin' };
+      mockUser = {
+        sub: '00000000-0000-4000-8000-000000000001',
+        email: 'admin@vetec.local',
+        rol: 'admin',
+      };
       mockAuthService.register.mockResolvedValue({
         message: 'Te enviamos un correo para continuar...',
       });
@@ -216,7 +236,7 @@ describe('AuthController', () => {
         .field('nombreCompleto', 'Admin Nuevo')
         .field('telefono', '15512345678')
         .field('calle', 'Av. Principal 100')
-        .field('sucursalId', '1')
+        .field('sucursalId', '00000000-0000-4000-8000-000000000001')
         .attach('addressDoc', Buffer.from('pdf'), 'direccion.pdf')
         .attach('identityDoc', Buffer.from('jpg'), 'identidad.jpg');
 
@@ -240,7 +260,7 @@ describe('AuthController', () => {
         .field('nombreCompleto', 'Juan Pérez')
         .field('telefono', '15512345678')
         .field('calle', 'Av. Principal 100')
-        .field('sucursalId', '1');
+        .field('sucursalId', '00000000-0000-4000-8000-000000000001');
 
       expect(response.status).toBeGreaterThanOrEqual(400);
     });
@@ -254,7 +274,7 @@ describe('AuthController', () => {
         .field('nombreCompleto', 'Juan Pérez')
         .field('telefono', '15512345678')
         .field('calle', 'Av. Principal 100')
-        .field('sucursalId', '1')
+        .field('sucursalId', '00000000-0000-4000-8000-000000000001')
         .attach('addressDoc', Buffer.from('exe'), 'virus.exe')
         .attach('identityDoc', Buffer.from('jpg'), 'identidad.jpg');
 
