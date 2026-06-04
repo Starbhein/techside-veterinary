@@ -21,6 +21,7 @@ const mockPrismaService = {
   },
   archivo: {
     create: jest.fn(),
+    delete: jest.fn(),
   },
 };
 
@@ -238,10 +239,27 @@ describe('MascotasService', () => {
       alergiaIds: [alergiaId],
     };
 
+    it('should throw NotFoundException when pet not found or owned by another user', async () => {
+      mockPrismaService.mascota.findFirst.mockResolvedValue(null);
+
+      await expect(
+        service.update(mascotaId, propietarioId, { nombre: 'X' }, {}),
+      ).rejects.toThrow(NotFoundException);
+
+      expect(mockPrismaService.mascota.findFirst).toHaveBeenCalledWith({
+        where: { id: mascotaId, propietarioId },
+        include: { fotoPerfil: true, carnetVacunacion: true },
+      });
+    });
+
     it('should replace allergies when alergiaIds provided', async () => {
-      mockPrismaService.mascota.findFirstOrThrow.mockResolvedValue({
+      mockPrismaService.mascota.findFirst.mockResolvedValue({
         id: mascotaId,
         propietarioId,
+        fotoPerfilId: null,
+        carnetVacunacionId: null,
+        fotoPerfil: null,
+        carnetVacunacion: null,
       });
       mockPrismaService.mascotaAlergia.deleteMany.mockResolvedValue({
         count: 1,
@@ -261,8 +279,9 @@ describe('MascotasService', () => {
         {},
       );
 
-      expect(mockPrismaService.mascota.findFirstOrThrow).toHaveBeenCalledWith({
+      expect(mockPrismaService.mascota.findFirst).toHaveBeenCalledWith({
         where: { id: mascotaId, propietarioId },
+        include: { fotoPerfil: true, carnetVacunacion: true },
       });
       expect(mockPrismaService.mascotaAlergia.deleteMany).toHaveBeenCalledWith({
         where: { mascotaId },
@@ -279,9 +298,13 @@ describe('MascotasService', () => {
     });
 
     it('should update pet without touching allergies when alergiaIds undefined', async () => {
-      mockPrismaService.mascota.findFirstOrThrow.mockResolvedValue({
+      mockPrismaService.mascota.findFirst.mockResolvedValue({
         id: mascotaId,
         propietarioId,
+        fotoPerfilId: null,
+        carnetVacunacionId: null,
+        fotoPerfil: null,
+        carnetVacunacion: null,
       });
       mockPrismaService.mascota.update.mockResolvedValue({
         id: mascotaId,
@@ -302,6 +325,109 @@ describe('MascotasService', () => {
         mockPrismaService.mascotaAlergia.createMany,
       ).not.toHaveBeenCalled();
       expect(result).toEqual({ id: mascotaId, nombre: 'Firulais II' });
+    });
+
+    it('should delete old files and archivo records after successful update with new files', async () => {
+      mockPrismaService.mascota.findFirst.mockResolvedValue({
+        id: mascotaId,
+        propietarioId,
+        fotoPerfilId: '00000000-0000-4000-8000-000000000020',
+        carnetVacunacionId: '00000000-0000-4000-8000-000000000021',
+        fotoPerfil: {
+          id: '00000000-0000-4000-8000-000000000020',
+          url: './uploads/old-foto.jpg',
+        },
+        carnetVacunacion: {
+          id: '00000000-0000-4000-8000-000000000021',
+          url: './uploads/old-carnet.pdf',
+        },
+      });
+
+      mockArchivosService.saveFile
+        .mockReturnValueOnce('./uploads/new-foto.jpg')
+        .mockReturnValueOnce('./uploads/new-carnet.pdf');
+
+      mockPrismaService.archivo.create
+        .mockResolvedValueOnce({ id: '00000000-0000-4000-8000-000000000030' })
+        .mockResolvedValueOnce({ id: '00000000-0000-4000-8000-000000000031' });
+
+      mockPrismaService.mascota.update.mockResolvedValue({
+        id: mascotaId,
+        nombre: 'Firulais II',
+      });
+
+      mockPrismaService.archivo.delete = jest.fn().mockResolvedValue({});
+
+      const result = await service.update(
+        mascotaId,
+        propietarioId,
+        { nombre: 'Firulais II' },
+        {
+          foto: mockFile,
+          carnet: {
+            ...mockFile,
+            fieldname: 'carnet',
+            originalname: 'carnet.pdf',
+            mimetype: 'application/pdf',
+          },
+        },
+      );
+
+      expect(mockArchivosService.saveFile).toHaveBeenCalledTimes(2);
+      expect(mockPrismaService.archivo.create).toHaveBeenCalledTimes(2);
+      expect(mockPrismaService.mascota.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            fotoPerfilId: '00000000-0000-4000-8000-000000000030',
+            carnetVacunacionId: '00000000-0000-4000-8000-000000000031',
+          }),
+        }),
+      );
+
+      expect(mockArchivosService.deleteFile).toHaveBeenCalledWith(
+        './uploads/old-foto.jpg',
+      );
+      expect(mockArchivosService.deleteFile).toHaveBeenCalledWith(
+        './uploads/old-carnet.pdf',
+      );
+      expect(mockPrismaService.archivo.delete).toHaveBeenCalledWith({
+        where: { id: '00000000-0000-4000-8000-000000000020' },
+      });
+      expect(mockPrismaService.archivo.delete).toHaveBeenCalledWith({
+        where: { id: '00000000-0000-4000-8000-000000000021' },
+      });
+
+      expect(result).toEqual({ id: mascotaId, nombre: 'Firulais II' });
+    });
+
+    it('should rollback new files when transaction fails during update', async () => {
+      mockPrismaService.mascota.findFirst.mockResolvedValue({
+        id: mascotaId,
+        propietarioId,
+        fotoPerfilId: null,
+        carnetVacunacionId: null,
+        fotoPerfil: null,
+        carnetVacunacion: null,
+      });
+
+      mockArchivosService.saveFile.mockReturnValue('./uploads/new-foto.jpg');
+      mockPrismaService.archivo.create.mockResolvedValue({
+        id: '00000000-0000-4000-8000-000000000040',
+      });
+      mockPrismaService.mascota.update.mockRejectedValue(new Error('DB error'));
+
+      await expect(
+        service.update(
+          mascotaId,
+          propietarioId,
+          { nombre: 'X' },
+          { foto: mockFile },
+        ),
+      ).rejects.toThrow('DB error');
+
+      expect(mockArchivosService.deleteFile).toHaveBeenCalledWith(
+        './uploads/new-foto.jpg',
+      );
     });
   });
 });

@@ -151,80 +151,114 @@ export class MascotasService {
       carnet?: Express.Multer.File;
     },
   ) {
-    return this.prisma.$transaction(async (tx) => {
-      try {
-        await tx.mascota.findFirstOrThrow({
-          where: { id, propietarioId },
-        });
-      } catch {
-        throw new NotFoundException('Mascota no encontrada');
-      }
-
-      const data: Prisma.MascotaUncheckedUpdateInput = {};
-
-      if (dto.nombre !== undefined) data.nombre = dto.nombre;
-      if (dto.razaId !== undefined) data.razaId = dto.razaId;
-      if (dto.colorId !== undefined) data.colorId = dto.colorId;
-      if (dto.tipoPeloId !== undefined) data.tipoPeloId = dto.tipoPeloId;
-      if (dto.patronPeloId !== undefined) data.patronPeloId = dto.patronPeloId;
-      if (dto.comportamientoId !== undefined)
-        data.comportamientoId = dto.comportamientoId;
-      if (dto.fechaNacimiento !== undefined)
-        data.fechaNacimiento = new Date(dto.fechaNacimiento);
-      if (dto.sexo !== undefined) data.sexo = dto.sexo;
-      if (dto.peso !== undefined) data.peso = dto.peso;
-      if (dto.esterilizado !== undefined) data.esterilizado = dto.esterilizado;
-      if (dto.ruac !== undefined) data.ruac = dto.ruac;
-      if (dto.microchip !== undefined) data.microchip = dto.microchip;
-      if (dto.tatuaje !== undefined) data.tatuaje = dto.tatuaje;
-      if (dto.observaciones !== undefined)
-        data.observaciones = dto.observaciones;
-
-      if (files.foto) {
-        const fotoPath = this.archivosService.saveFile(files.foto);
-        const foto = await tx.archivo.create({
-          data: {
-            url: fotoPath,
-            nombreArchivo: files.foto.originalname,
-            mime: files.foto.mimetype,
-            tamano: files.foto.size,
-          },
-        });
-        data.fotoPerfilId = foto.id;
-      }
-
-      if (files.carnet) {
-        const carnetPath = this.archivosService.saveFile(files.carnet);
-        const carnet = await tx.archivo.create({
-          data: {
-            url: carnetPath,
-            nombreArchivo: files.carnet.originalname,
-            mime: files.carnet.mimetype,
-            tamano: files.carnet.size,
-          },
-        });
-        data.carnetVacunacionId = carnet.id;
-      }
-
-      if (dto.alergiaIds !== undefined) {
-        await tx.mascotaAlergia.deleteMany({
-          where: { mascotaId: id },
-        });
-        if (dto.alergiaIds.length > 0) {
-          await tx.mascotaAlergia.createMany({
-            data: dto.alergiaIds.map((alergiaId) => ({
-              mascotaId: id,
-              alergiaId,
-            })),
-          });
-        }
-      }
-
-      return tx.mascota.update({
-        where: { id },
-        data,
-        include: { alergias: true },
-      });
+    const currentPet = await this.prisma.mascota.findFirst({
+      where: { id, propietarioId },
+      include: { fotoPerfil: true, carnetVacunacion: true },
     });
+
+    if (!currentPet) {
+      throw new NotFoundException('Mascota no encontrada');
+    }
+
+    const oldFotoUrl = currentPet.fotoPerfil?.url;
+    const oldCarnetUrl = currentPet.carnetVacunacion?.url;
+    const oldFotoId = currentPet.fotoPerfilId;
+    const oldCarnetId = currentPet.carnetVacunacionId;
+
+    const newSavedPaths: string[] = [];
+
+    try {
+      const result = await this.prisma.$transaction(async (tx) => {
+        const data: Prisma.MascotaUncheckedUpdateInput = {};
+
+        if (dto.nombre !== undefined) data.nombre = dto.nombre;
+        if (dto.razaId !== undefined) data.razaId = dto.razaId;
+        if (dto.colorId !== undefined) data.colorId = dto.colorId;
+        if (dto.tipoPeloId !== undefined) data.tipoPeloId = dto.tipoPeloId;
+        if (dto.patronPeloId !== undefined)
+          data.patronPeloId = dto.patronPeloId;
+        if (dto.comportamientoId !== undefined)
+          data.comportamientoId = dto.comportamientoId;
+        if (dto.fechaNacimiento !== undefined)
+          data.fechaNacimiento = new Date(dto.fechaNacimiento);
+        if (dto.sexo !== undefined) data.sexo = dto.sexo;
+        if (dto.peso !== undefined) data.peso = dto.peso;
+        if (dto.esterilizado !== undefined)
+          data.esterilizado = dto.esterilizado;
+        if (dto.ruac !== undefined) data.ruac = dto.ruac;
+        if (dto.microchip !== undefined) data.microchip = dto.microchip;
+        if (dto.tatuaje !== undefined) data.tatuaje = dto.tatuaje;
+        if (dto.observaciones !== undefined)
+          data.observaciones = dto.observaciones;
+
+        if (files.foto) {
+          const fotoPath = this.archivosService.saveFile(files.foto);
+          newSavedPaths.push(fotoPath);
+          const foto = await tx.archivo.create({
+            data: {
+              url: fotoPath,
+              nombreArchivo: files.foto.originalname,
+              mime: files.foto.mimetype,
+              tamano: files.foto.size,
+            },
+          });
+          data.fotoPerfilId = foto.id;
+        }
+
+        if (files.carnet) {
+          const carnetPath = this.archivosService.saveFile(files.carnet);
+          newSavedPaths.push(carnetPath);
+          const carnet = await tx.archivo.create({
+            data: {
+              url: carnetPath,
+              nombreArchivo: files.carnet.originalname,
+              mime: files.carnet.mimetype,
+              tamano: files.carnet.size,
+            },
+          });
+          data.carnetVacunacionId = carnet.id;
+        }
+
+        if (dto.alergiaIds !== undefined) {
+          await tx.mascotaAlergia.deleteMany({
+            where: { mascotaId: id },
+          });
+          if (dto.alergiaIds.length > 0) {
+            await tx.mascotaAlergia.createMany({
+              data: dto.alergiaIds.map((alergiaId) => ({
+                mascotaId: id,
+                alergiaId,
+              })),
+            });
+          }
+        }
+
+        return tx.mascota.update({
+          where: { id },
+          data,
+          include: { alergias: true },
+        });
+      });
+
+      if (oldFotoUrl) this.archivosService.deleteFile(oldFotoUrl);
+      if (oldCarnetUrl) this.archivosService.deleteFile(oldCarnetUrl);
+      if (oldFotoId) {
+        await this.prisma.archivo
+          .delete({ where: { id: oldFotoId } })
+          .catch(() => {});
+      }
+      if (oldCarnetId) {
+        await this.prisma.archivo
+          .delete({ where: { id: oldCarnetId } })
+          .catch(() => {});
+      }
+
+      return result;
+    } catch (error) {
+      for (const path of newSavedPaths) {
+        this.archivosService.deleteFile(path);
+      }
+      throw error;
+    }
   }
 }
