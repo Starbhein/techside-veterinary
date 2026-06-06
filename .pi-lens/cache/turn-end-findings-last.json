@@ -1,6 +1,0 @@
-{
-  "signature": "src/citas/dto/create-cita.dto.ts::ℹ️ Advisory — no action required this turn:\nCode-quality warnings introduced/touched this turn: 3 across 1 file(s).\nTop rules: typescript:6385×3\nDetails written to .pi-lens/cache/code-quality-warnings.json\nNo action required unless you are already refactoring these areas.",
-  "sessionId": "lens-mq2x5fqd-14321c4a",
-  "projectSeqStart": 310,
-  "projectSeqEnd": 311
-}
