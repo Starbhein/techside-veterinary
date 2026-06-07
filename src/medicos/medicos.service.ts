@@ -69,6 +69,18 @@ export class MedicosService {
     });
   }
 
+  async findAllEspecialidades() {
+    return this.prisma.especialidad.findMany({
+      select: {
+        id: true,
+        nombre: true,
+        descripcion: true,
+        precio: true,
+      },
+      orderBy: { nombre: 'asc' },
+    });
+  }
+
   async findFiltered(query: { especialidadId?: string; sucursalId?: string }) {
     const where: Record<string, unknown> = {};
 

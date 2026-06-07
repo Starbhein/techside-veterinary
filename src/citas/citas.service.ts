@@ -75,17 +75,8 @@ export class CitasService {
     );
     const horaFin = new Date(horaInicio.getTime() + 60 * 60 * 1000); // +1h
 
-    // V-03: Anticipación mínima de 24 horas
-    const ahora = new Date();
-    const diffHoras =
-      (fechaCita.getTime() - ahora.getTime()) / (1000 * 60 * 60);
-    if (diffHoras < 24) {
-      throw new BadRequestException(
-        'Las citas deben agendarse con al menos 24 horas de anticipación',
-      );
-    }
-
     // V-04: Verificar que fecha sea futura
+    const ahora = new Date();
     const fechaHoraCita = new Date(
       fechaCita.getFullYear(),
       fechaCita.getMonth(),
@@ -96,6 +87,24 @@ export class CitasService {
     if (fechaHoraCita <= ahora) {
       throw new BadRequestException(
         'La fecha y hora de la cita deben ser futuras',
+      );
+    }
+
+    // V-03: Anticipación mínima de 24 horas
+    const diffHoras =
+      (fechaHoraCita.getTime() - ahora.getTime()) / (1000 * 60 * 60);
+    if (diffHoras < 24) {
+      throw new BadRequestException(
+        'Las citas deben agendarse con al menos 24 horas de anticipación',
+      );
+    }
+
+    // V-03b: Máximo 2 meses de anticipación
+    const maxFecha = new Date(ahora);
+    maxFecha.setMonth(maxFecha.getMonth() + 2);
+    if (fechaHoraCita > maxFecha) {
+      throw new BadRequestException(
+        'No se puede agendar con más de 2 meses de anticipación',
       );
     }
 

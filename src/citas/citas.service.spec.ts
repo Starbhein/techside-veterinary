@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import { Test, TestingModule } from '@nestjs/testing';
 import { CitasService } from './citas.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -7,6 +8,7 @@ import { EmailService } from '../email/email.service';
 import { Rol, EstadoCita } from '@prisma/client';
 import {
   BadRequestException,
+  ConflictException,
   ForbiddenException,
   NotFoundException,
 } from '@nestjs/common';
@@ -118,9 +120,13 @@ describe('CitasService', () => {
     });
 
     it('debería rechazar si la cita es en menos de 24 horas', async () => {
+      const now = new Date('2026-06-10T15:00:00');
+      jest.useFakeTimers().setSystemTime(now);
+
       const dtoCorta = {
         ...dto,
-        fecha: new Date().toISOString().split('T')[0],
+        fecha: '2026-06-11',
+        horaInicio: '08:00',
       };
       mockPrisma.mascota.findUnique.mockResolvedValue({
         id: dto.mascotaId,
@@ -129,6 +135,8 @@ describe('CitasService', () => {
       await expect(service.create(dtoCorta, cliente)).rejects.toThrow(
         BadRequestException,
       );
+
+      jest.useRealTimers();
     });
 
     it('debería rechazar si el médico no tiene horario para este día', async () => {
@@ -536,6 +544,395 @@ describe('CitasService', () => {
           medicoUser,
         ),
       ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('debería rechazar cliente intentando cambiar estado', async () => {
+      const clienteUser = {
+        sub: 'user-1',
+        email: 'test@test.com',
+        rol: Rol.cliente,
+      };
+      mockPrisma.cita.findUnique.mockResolvedValue(baseCita);
+
+      await expect(
+        service.cambiarEstado(
+          'cita-1',
+          { estado: EstadoCita.en_curso },
+          clienteUser,
+        ),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('debería rechazar transición pendiente_de_pago → cancelada vía PATCH', async () => {
+      mockPrisma.cita.findUnique.mockResolvedValue({
+        id: 'cita-1',
+        estado: EstadoCita.pendiente_de_pago,
+        medicoId: 'med-1',
+        mascotaId: 'masc-1',
+        fecha: new Date(),
+        horaInicio: new Date(1970, 0, 1, 10, 0),
+      });
+
+      await expect(
+        service.cambiarEstado(
+          'cita-1',
+          { estado: EstadoCita.cancelada },
+          admin,
+        ),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('debería permitir en_curso → cancelada', async () => {
+      mockPrisma.cita.findUnique.mockResolvedValue({
+        id: 'cita-1',
+        estado: EstadoCita.en_curso,
+        medicoId: 'med-1',
+        mascotaId: 'masc-1',
+        fecha: new Date(),
+        horaInicio: new Date(1970, 0, 1, 0, 0),
+      });
+      mockPrisma.cita.update.mockResolvedValue({
+        id: 'cita-1',
+        estado: EstadoCita.cancelada,
+      });
+
+      const result = await service.cambiarEstado(
+        'cita-1',
+        { estado: EstadoCita.cancelada },
+        admin,
+      );
+      expect(result.estado).toBe(EstadoCita.cancelada);
+    });
+  });
+
+  describe('remove edge cases', () => {
+    const admin = { sub: 'admin-1', email: 'admin@test.com', rol: Rol.admin };
+
+    it('should reject canceling a completed cita', async () => {
+      mockPrisma.cita.findUnique.mockResolvedValue({
+        id: 'cita-1',
+        estado: EstadoCita.completada,
+        medicoId: 'med-1',
+        mascotaId: 'masc-1',
+      });
+
+      await expect(service.remove('cita-1', admin)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('should cancel a pending cita without touching Pago', async () => {
+      mockPrisma.cita.findUnique.mockResolvedValue({
+        id: 'cita-1',
+        estado: EstadoCita.pendiente,
+        medicoId: 'med-1',
+        mascotaId: 'masc-1',
+      });
+      mockPrisma.cita.update.mockResolvedValue({
+        id: 'cita-1',
+        estado: EstadoCita.cancelada,
+      });
+
+      const result = await service.remove('cita-1', admin);
+      expect(result.estado).toBe(EstadoCita.cancelada);
+      expect(mockPrisma.pago.update).not.toHaveBeenCalled();
+    });
+
+    it('should cancel an en_curso cita', async () => {
+      mockPrisma.cita.findUnique.mockResolvedValue({
+        id: 'cita-1',
+        estado: EstadoCita.en_curso,
+        medicoId: 'med-1',
+        mascotaId: 'masc-1',
+      });
+      mockPrisma.cita.update.mockResolvedValue({
+        id: 'cita-1',
+        estado: EstadoCita.cancelada,
+      });
+
+      const result = await service.remove('cita-1', admin);
+      expect(result.estado).toBe(EstadoCita.cancelada);
+      expect(mockPrisma.pago.update).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('update', () => {
+    const admin = { sub: 'admin-1', email: 'admin@test.com', rol: Rol.admin };
+
+    it('should update motivo only', async () => {
+      mockPrisma.cita.findUnique.mockResolvedValue({
+        id: 'cita-1',
+        estado: EstadoCita.pendiente,
+        medicoId: 'med-1',
+        mascotaId: 'masc-1',
+        fecha: new Date('2026-07-01'),
+        horaInicio: new Date(1970, 0, 1, 10, 0),
+      });
+      mockPrisma.mascota.findUnique.mockResolvedValue({
+        id: 'masc-1',
+        propietarioId: admin.sub,
+      });
+      mockPrisma.cita.update.mockResolvedValue({
+        id: 'cita-1',
+        motivo: 'Nuevo motivo',
+      });
+
+      const result = await service.update(
+        'cita-1',
+        { motivo: 'Nuevo motivo' },
+        admin,
+      );
+      expect(result.motivo).toBe('Nuevo motivo');
+    });
+
+    it('should update fecha and revalidate overlaps', async () => {
+      mockPrisma.cita.findUnique.mockResolvedValue({
+        id: 'cita-1',
+        estado: EstadoCita.pendiente,
+        medicoId: 'med-1',
+        mascotaId: 'masc-1',
+        fecha: new Date('2026-07-01'),
+        horaInicio: new Date(1970, 0, 1, 10, 0),
+      });
+      mockPrisma.mascota.findUnique.mockResolvedValue({
+        id: 'masc-1',
+        propietarioId: admin.sub,
+      });
+      mockPrisma.medicoHorario.findFirst.mockResolvedValue({
+        id: 'h1',
+        consultorioId: 'cons-1',
+      });
+      mockPrisma.cita.findMany.mockResolvedValue([]);
+      mockPrisma.cita.update.mockResolvedValue({
+        id: 'cita-1',
+        fecha: new Date('2026-08-01'),
+      });
+
+      const result = await service.update(
+        'cita-1',
+        { fecha: '2026-08-01' },
+        admin,
+      );
+      expect(result.fecha).toBeDefined();
+    });
+
+    it('should reject updating a completed cita', async () => {
+      mockPrisma.cita.findUnique.mockResolvedValue({
+        id: 'cita-1',
+        estado: EstadoCita.completada,
+        medicoId: 'med-1',
+        mascotaId: 'masc-1',
+      });
+      mockPrisma.mascota.findUnique.mockResolvedValue({
+        id: 'masc-1',
+        propietarioId: admin.sub,
+      });
+
+      await expect(
+        service.update('cita-1', { motivo: 'x' }, admin),
+      ).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe('booking validations', () => {
+    const cliente = { sub: 'user-1', email: 'test@test.com', rol: Rol.cliente };
+    const dto = {
+      sucursalId: '550e8400-e29b-41d4-a716-446655440000',
+      medicoId: '550e8400-e29b-41d4-a716-446655440001',
+      mascotaId: '550e8400-e29b-41d4-a716-446655440002',
+      servicioId: '550e8400-e29b-41d4-a716-446655440004',
+      fecha: '2026-12-31',
+      horaInicio: '10:00',
+      motivo: 'Consulta general',
+    };
+
+    it('should reject booking more than 2 months ahead', async () => {
+      const fechaLejana = new Date();
+      fechaLejana.setMonth(fechaLejana.getMonth() + 3);
+      const dtoLejano = {
+        ...dto,
+        fecha: fechaLejana.toISOString().split('T')[0],
+      };
+
+      mockPrisma.mascota.findUnique.mockResolvedValue({
+        id: dto.mascotaId,
+        propietarioId: cliente.sub,
+      });
+
+      await expect(service.create(dtoLejano, cliente)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('should reject doctor overlap', async () => {
+      const fechaFutura = new Date();
+      fechaFutura.setDate(fechaFutura.getDate() + 2);
+      const dtoValido = {
+        ...dto,
+        fecha: fechaFutura.toISOString().split('T')[0],
+      };
+
+      mockPrisma.mascota.findUnique.mockResolvedValue({
+        id: dto.mascotaId,
+        propietarioId: cliente.sub,
+      });
+      mockPrisma.cita.findFirst.mockResolvedValue(null);
+      mockPrisma.medicoHorario.findFirst.mockResolvedValue({
+        id: 'h1',
+        medicoId: dto.medicoId,
+        consultorioId: 'cons-1',
+      });
+      mockPrisma.medicoHorario.findMany.mockResolvedValue([]);
+      mockPrisma.cita.findMany.mockResolvedValue([
+        {
+          id: 'cita-existe',
+          horaInicio: new Date(1970, 0, 1, 9, 30),
+          horaFin: new Date(1970, 0, 1, 10, 30),
+        },
+      ]);
+
+      await expect(service.create(dtoValido, cliente)).rejects.toThrow(
+        ConflictException,
+      );
+    });
+
+    it('should reject consultorio overlap', async () => {
+      const fechaFutura = new Date();
+      fechaFutura.setDate(fechaFutura.getDate() + 2);
+      const dtoValido = {
+        ...dto,
+        fecha: fechaFutura.toISOString().split('T')[0],
+      };
+
+      mockPrisma.mascota.findUnique.mockResolvedValue({
+        id: dto.mascotaId,
+        propietarioId: cliente.sub,
+      });
+      mockPrisma.cita.findFirst.mockResolvedValue(null);
+      mockPrisma.medicoHorario.findFirst.mockResolvedValue({
+        id: 'h1',
+        medicoId: dto.medicoId,
+        consultorioId: 'cons-1',
+      });
+      mockPrisma.medicoHorario.findMany.mockResolvedValue([
+        { medicoId: 'otro-med', consultorioId: 'cons-1' },
+      ]);
+      mockPrisma.cita.findMany.mockImplementation((args: any) => {
+        if (args.where?.medicoId && !args.where.medicoId?.in) {
+          return Promise.resolve([]);
+        }
+        if (args.where?.medicoId?.in) {
+          return Promise.resolve([
+            {
+              id: 'cita-cons',
+              horaInicio: new Date(1970, 0, 1, 9, 30),
+              horaFin: new Date(1970, 0, 1, 10, 30),
+            },
+          ]);
+        }
+        return Promise.resolve([]);
+      });
+
+      await expect(service.create(dtoValido, cliente)).rejects.toThrow(
+        ConflictException,
+      );
+    });
+
+    it('should reject patient same-branch overlap', async () => {
+      const fechaFutura = new Date();
+      fechaFutura.setDate(fechaFutura.getDate() + 2);
+      const dtoValido = {
+        ...dto,
+        fecha: fechaFutura.toISOString().split('T')[0],
+      };
+
+      mockPrisma.mascota.findUnique.mockResolvedValue({
+        id: dto.mascotaId,
+        propietarioId: cliente.sub,
+      });
+      mockPrisma.cita.findFirst.mockResolvedValue(null);
+      mockPrisma.medicoHorario.findFirst.mockResolvedValue({
+        id: 'h1',
+        medicoId: dto.medicoId,
+        consultorioId: 'cons-1',
+      });
+      mockPrisma.medicoHorario.findMany.mockResolvedValue([]);
+      mockPrisma.cita.findMany.mockImplementation((args: any) => {
+        if (args.where?.medicoId && !args.where.medicoId?.in) {
+          return Promise.resolve([]);
+        }
+        if (args.where?.medicoId?.in) {
+          return Promise.resolve([]);
+        }
+        if (
+          args.where?.mascotaId &&
+          args.where?.sucursalId &&
+          !args.where.sucursalId?.not
+        ) {
+          return Promise.resolve([
+            {
+              id: 'cita-pac',
+              horaInicio: new Date(1970, 0, 1, 9, 30),
+              horaFin: new Date(1970, 0, 1, 10, 30),
+            },
+          ]);
+        }
+        return Promise.resolve([]);
+      });
+
+      await expect(service.create(dtoValido, cliente)).rejects.toThrow(
+        ConflictException,
+      );
+    });
+
+    it('should reject cross-branch less than 2h gap', async () => {
+      const fechaFutura = new Date();
+      fechaFutura.setDate(fechaFutura.getDate() + 2);
+      const dtoValido = {
+        ...dto,
+        fecha: fechaFutura.toISOString().split('T')[0],
+      };
+
+      mockPrisma.mascota.findUnique.mockResolvedValue({
+        id: dto.mascotaId,
+        propietarioId: cliente.sub,
+      });
+      mockPrisma.cita.findFirst.mockResolvedValue(null);
+      mockPrisma.medicoHorario.findFirst.mockResolvedValue({
+        id: 'h1',
+        medicoId: dto.medicoId,
+        consultorioId: 'cons-1',
+      });
+      mockPrisma.medicoHorario.findMany.mockResolvedValue([]);
+      mockPrisma.cita.findMany.mockImplementation((args: any) => {
+        if (args.where?.medicoId && !args.where.medicoId?.in) {
+          return Promise.resolve([]);
+        }
+        if (args.where?.medicoId?.in) {
+          return Promise.resolve([]);
+        }
+        if (
+          args.where?.mascotaId &&
+          args.where?.sucursalId &&
+          !args.where.sucursalId?.not
+        ) {
+          return Promise.resolve([]);
+        }
+        if (args.where?.mascotaId && args.where?.sucursalId?.not) {
+          return Promise.resolve([
+            {
+              id: 'cita-cruz',
+              sucursalId: 'otra-suc',
+              horaInicio: new Date(1970, 0, 1, 9, 0),
+            },
+          ]);
+        }
+        return Promise.resolve([]);
+      });
+
+      await expect(service.create(dtoValido, cliente)).rejects.toThrow(
+        ConflictException,
+      );
     });
   });
 });

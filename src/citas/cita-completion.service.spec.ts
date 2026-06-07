@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { CitaCompletionService } from './cita-completion.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { CitaEstadoHistorialService } from './cita-estado-historial.service';
 import { EstadoCita } from '@prisma/client';
 
 describe('CitaCompletionService', () => {
@@ -13,11 +14,16 @@ describe('CitaCompletionService', () => {
     },
   };
 
+  const mockHistorialService = {
+    registrarCambio: jest.fn(),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         CitaCompletionService,
         { provide: PrismaService, useValue: mockPrisma },
+        { provide: CitaEstadoHistorialService, useValue: mockHistorialService },
       ],
     }).compile();
 
@@ -87,6 +93,13 @@ describe('CitaCompletionService', () => {
         where: { id: 'c1', estado: EstadoCita.en_curso },
         data: { estado: EstadoCita.completada },
       });
+      expect(mockHistorialService.registrarCambio).toHaveBeenCalledWith(
+        'c1',
+        EstadoCita.en_curso,
+        EstadoCita.completada,
+        null,
+        'Consulta y receta registradas',
+      );
     });
 
     it('should be idempotent (no-op if already completada)', async () => {

@@ -418,6 +418,8 @@ model Cita {
   @@index([servicioId])
   @@index([fecha])
   @@index([estado])
+  @@index([medicoId, fecha, estado])
+  @@index([mascotaId, fecha, estado])
   @@map("citas")
 }
 
