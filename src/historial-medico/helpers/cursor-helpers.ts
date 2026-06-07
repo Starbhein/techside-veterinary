@@ -45,3 +45,44 @@ export function decodeCursor(cursorStr: string): CitasCursor {
     throw new BadRequestException('Invalid cursor format');
   }
 }
+
+// ── Admin cursor helpers ──
+
+export interface AdminCursor {
+  nombre: string;
+  id: string;
+}
+
+export function encodeAdminCursor(cursor: AdminCursor): string {
+  return Buffer.from(JSON.stringify(cursor)).toString('base64url');
+}
+
+export function decodeAdminCursor(cursorStr: string): AdminCursor {
+  try {
+    const parsed = JSON.parse(
+      Buffer.from(cursorStr, 'base64url').toString('utf-8'),
+    ) as unknown;
+
+    if (
+      typeof parsed !== 'object' ||
+      parsed === null ||
+      !('nombre' in parsed) ||
+      !('id' in parsed)
+    ) {
+      throw new BadRequestException('Invalid cursor format');
+    }
+
+    const cursor = parsed as Record<string, unknown>;
+
+    if (typeof cursor.nombre !== 'string' || typeof cursor.id !== 'string') {
+      throw new BadRequestException('Invalid cursor format');
+    }
+
+    return {
+      nombre: cursor.nombre,
+      id: cursor.id,
+    };
+  } catch {
+    throw new BadRequestException('Invalid cursor format');
+  }
+}

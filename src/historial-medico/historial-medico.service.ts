@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ForbiddenException,
   Injectable,
   NotFoundException,
@@ -11,8 +12,15 @@ import { CitaResumenDto } from './dto/cita-resumen.dto';
 import { CitaDetalleDto } from './dto/cita-detalle.dto';
 import { PesoHistorialItemDto } from './dto/peso-historial.dto';
 import { PaginatedCitasDto } from './dto/paginated-citas.dto';
-import { decodeCursor, encodeCursor } from './helpers/cursor-helpers';
+import {
+  decodeAdminCursor,
+  decodeCursor,
+  encodeAdminCursor,
+  encodeCursor,
+} from './helpers/cursor-helpers';
 import { PdfGeneratorService } from './pdf/pdf-generator.service';
+import { AdminFiltrosDto } from './dto/admin-filtros.dto';
+import { PaginatedAdminMascotasDto } from './dto/admin-mascota-resumen.dto';
 
 @Injectable()
 export class HistorialMedicoService {
@@ -656,5 +664,105 @@ export class HistorialMedicoService {
 
   private formatTime(date: Date): string {
     return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+  }
+
+  // ── Admin endpoint ──
+
+  async getAdminMascotas(
+    filtros: AdminFiltrosDto,
+  ): Promise<PaginatedAdminMascotasDto> {
+    const rawLimit =
+      typeof filtros.limit === 'string'
+        ? parseInt(filtros.limit, 10)
+        : (filtros.limit ?? 20);
+    const limit = Math.min(Math.max(rawLimit, 1), 100);
+    if (!Number.isInteger(limit)) {
+      throw new BadRequestException('Invalid limit');
+    }
+
+    const conditions: string[] = ['1=1'];
+    const params: (string | number | Date | null)[] = [];
+
+    if (filtros.mascotaId) {
+      conditions.push(`m.id = $${params.length + 1}`);
+      params.push(filtros.mascotaId);
+    }
+    if (filtros.usuarioId) {
+      conditions.push(`m.propietario_id = $${params.length + 1}`);
+      params.push(filtros.usuarioId);
+    }
+    if (filtros.medicoId) {
+      conditions.push(
+        `EXISTS (SELECT 1 FROM citas c_m WHERE c_m.mascota_id = m.id AND c_m.medico_id = $${params.length + 1})`,
+      );
+      params.push(filtros.medicoId);
+    }
+    if (filtros.fechaDesde) {
+      conditions.push(
+        `EXISTS (SELECT 1 FROM citas c_d WHERE c_d.mascota_id = m.id AND c_d.fecha >= $${params.length + 1}::date)`,
+      );
+      params.push(filtros.fechaDesde);
+    }
+    if (filtros.fechaHasta) {
+      conditions.push(
+        `EXISTS (SELECT 1 FROM citas c_h WHERE c_h.mascota_id = m.id AND c_h.fecha <= $${params.length + 1}::date)`,
+      );
+      params.push(filtros.fechaHasta);
+    }
+
+    let cursorCondition = '';
+    if (filtros.cursor) {
+      const decoded = decodeAdminCursor(filtros.cursor);
+      params.push(decoded.nombre, decoded.id);
+      cursorCondition = `AND (m.nombre > $${params.length - 1} OR (m.nombre = $${params.length - 1} AND m.id > $${params.length}))`;
+    }
+
+    const query = `
+      SELECT
+        m.id AS "mascotaId",
+        m.nombre AS "mascotaNombre",
+        p.nombre_completo AS "propietarioNombre",
+        u.email AS "propietarioEmail",
+        MAX(c.fecha) AS "ultimaCitaFecha",
+        COUNT(c.id)::int AS "totalCitas",
+        COUNT(c.id) FILTER (WHERE c.estado = 'completada')::int AS "totalCitasCompletadas"
+      FROM mascotas m
+      JOIN usuario u ON m.propietario_id = u.id
+      JOIN persona p ON u.persona_id = p.id
+      LEFT JOIN citas c ON c.mascota_id = m.id
+      WHERE ${conditions.join(' AND ')} ${cursorCondition}
+      GROUP BY m.id, m.nombre, p.nombre_completo, u.email
+      ORDER BY m.nombre ASC, m.id ASC
+      LIMIT ${limit + 1}
+    `;
+
+    type AdminQueryResult = {
+      mascotaId: string;
+      mascotaNombre: string;
+      propietarioNombre: string;
+      propietarioEmail: string;
+      ultimaCitaFecha: Date | null;
+      totalCitas: number;
+      totalCitasCompletadas: number;
+    };
+
+    const results = await this.prisma.$queryRawUnsafe<AdminQueryResult[]>(
+      query,
+      ...params,
+    );
+
+    const hasMore = results.length > limit;
+    const data = hasMore ? results.slice(0, limit) : results;
+    const nextCursor = hasMore
+      ? encodeAdminCursor({
+          nombre: data[data.length - 1].mascotaNombre,
+          id: data[data.length - 1].mascotaId,
+        })
+      : null;
+
+    return {
+      data,
+      meta: { nextCursor, limit, hasMore },
+    };
   }
 }
