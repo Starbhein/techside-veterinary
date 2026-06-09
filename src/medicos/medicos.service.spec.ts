@@ -8,6 +8,10 @@ import { AvailabilityCalculator } from '../citas/helpers/availability-calculator
 describe('MedicosService', () => {
   let service: MedicosService;
 
+  const tomorrow = new Date();
+  tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
+  const tomorrowStr = tomorrow.toISOString().split('T')[0];
+
   const mockPrisma = {
     medico: {
       create: jest.fn(),
@@ -181,25 +185,31 @@ describe('MedicosService', () => {
     it('should validate date range and delegate to calculator', async () => {
       const calculatorSpy = jest
         .spyOn(service['availability'], 'computeDays')
-        .mockResolvedValue([{ fecha: '2026-06-08', disponible: true }]);
+        .mockResolvedValue([{ fecha: tomorrowStr, disponible: true }]);
 
       const result = await service.disponibilidadDias(
         'med-1',
-        '2026-06-08',
-        '2026-06-08',
+        tomorrowStr,
+        tomorrowStr,
       );
 
-      expect(result).toEqual([{ fecha: '2026-06-08', disponible: true }]);
+      expect(result).toEqual([{ fecha: tomorrowStr, disponible: true }]);
       expect(calculatorSpy).toHaveBeenCalledWith(
         'med-1',
-        new Date('2026-06-08'),
-        new Date('2026-06-08'),
+        new Date(tomorrowStr),
+        new Date(tomorrowStr),
       );
     });
 
     it('should reject range exceeding 60 days', async () => {
+      const desde = new Date(tomorrow);
+      const hasta = new Date(tomorrow);
+      hasta.setUTCDate(hasta.getUTCDate() + 70);
+      const desdeStr = desde.toISOString().split('T')[0];
+      const hastaStr = hasta.toISOString().split('T')[0];
+
       await expect(
-        service.disponibilidadDias('med-1', '2026-06-01', '2026-08-01'),
+        service.disponibilidadDias('med-1', desdeStr, hastaStr),
       ).rejects.toThrow(BadRequestException);
     });
 
@@ -225,12 +235,12 @@ describe('MedicosService', () => {
           slots: [{ horaInicio: '09:00', horaFin: '10:00', disponible: true }],
         });
 
-      const result = await service.disponibilidadSlots('med-1', '2026-06-08');
+      const result = await service.disponibilidadSlots('med-1', tomorrowStr);
 
       expect(result.slots).toHaveLength(1);
       expect(calculatorSpy).toHaveBeenCalledWith(
         'med-1',
-        new Date('2026-06-08'),
+        new Date(tomorrowStr),
       );
     });
   });
