@@ -12,6 +12,7 @@ import {
 } from '@nestjs/common';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import {
+  ApiTags,
   ApiOperation,
   ApiBearerAuth,
   ApiParam,
@@ -61,6 +62,7 @@ function normalizeBody(body: Record<string, unknown>): Record<string, unknown> {
   return normalized;
 }
 
+@ApiTags('Mascotas')
 @UseGuards(JwtAuthGuard)
 @Controller('mascotas')
 export class MascotasController {

@@ -17,10 +17,12 @@ import { Throttle as ThrottlerDecorator } from '@nestjs/throttler';
 import { Rol } from '@prisma/client';
 import type { Response } from 'express';
 import {
+  ApiTags,
   ApiOperation,
   ApiBody,
   ApiResponse,
   ApiConsumes,
+  ApiQuery,
 } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { loginSchema } from './dto/login.dto';
@@ -42,6 +44,7 @@ import { Env } from '../config/env.validation';
 
 const ALLOWED_MIME_TYPES = ['application/pdf', 'image/jpeg', 'image/png'];
 
+@ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
   constructor(
@@ -282,6 +285,12 @@ export class AuthController {
     });
   }
 
+  @ApiQuery({
+    name: 'token',
+    type: 'string',
+    required: true,
+    description: 'Verification token sent by email',
+  })
   @ApiOperation({
     summary: 'Verify email address',
     description:
