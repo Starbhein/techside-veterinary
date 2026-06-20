@@ -71,7 +71,7 @@ Authorization: Bearer <access_token>
 | `calle` | string | ✅ | Dirección |
 | `numExterior` | string | ❌ | Número exterior |
 | `numInterior` | string | ❌ | Número interior |
-| `sucursalId` | UUID | ✅ | ID de la sucursal |
+| `sucursalId` | UUID | ✅ | ID de una sucursal activa (ver `GET /sucursales`) |
 | `addressDoc` | File | ✅ | PDF/JPG/PNG - Comprobante de domicilio |
 | `identityDoc` | File | ✅ | PDF/JPG/PNG - Identificación |
 
@@ -85,6 +85,7 @@ Authorization: Bearer <access_token>
 **Notas:**
 - Solo admin puede registrar médicos u otros admins.
 - Si el email/teléfono ya existe, devuelve 201 genérico (por seguridad).
+- El `sucursalId` se valida contra el modelo `Sucursal`; si no existe o está inactiva, devuelve `400`.
 - El `telefono` se normaliza eliminando todos los caracteres no numéricos (por ejemplo `+52 1 55 1234 5678` → `5215512345678`). Después de la normalización debe tener entre 10 y 15 dígitos.
 
 ---
@@ -348,17 +349,17 @@ Lista todos los servicios disponibles para citas.
 
 ---
 
-## 🏥 Sucursales (MxDivisiones)
+## 🏥 Sucursales
 
-**Nota:** Los endpoints de sucursales son **públicos** y no requieren JWT.
+**Nota:** El endpoint `GET /sucursales` es **público** y no requiere JWT. Los endpoints `GET /mx-divisiones/*` permanecen como catálogo de ubicaciones/divisiones.
 
 #### `GET /mx-divisiones`
 
-Lista todas las sucursales/divisiones.
+Lista todas las divisiones/ubicaciones del catálogo `MxDivision`.
 
 #### `GET /mx-divisiones/:id`
 
-Obtiene una sucursal por ID.
+Obtiene una división del catálogo por ID.
 
 **Response:**
 ```json
@@ -374,7 +375,7 @@ Obtiene una sucursal por ID.
 
 #### `GET /sucursales`
 
-Lista **pública** (sin JWT) de sucursales activas en formato reducido. Útil para llenar selectores durante el registro y agendamiento.
+Lista **pública** (sin JWT) de sucursales activas (`Sucursal`) en formato reducido. Este es el origen de `sucursalId` para registro y agendamiento.
 
 **Response ejemplo:**
 ```json

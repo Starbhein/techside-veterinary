@@ -7,7 +7,6 @@ import { Readable } from 'stream';
 import { AuthService } from './auth.service';
 import { UsuariosService } from '../usuarios/usuarios.service';
 import { ArchivosService } from '../archivos/archivos.service';
-import { MxDivisionesService } from '../mx-divisiones/mx-divisiones.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { MedicosService } from '../medicos/medicos.service';
 import * as bcrypt from 'bcrypt';
@@ -29,10 +28,6 @@ describe('AuthService', () => {
   const mockArchivosService = {
     saveFile: jest.fn(),
     deleteFile: jest.fn(),
-  };
-
-  const mockMxDivisionesService = {
-    findById: jest.fn(),
   };
 
   const mockMedicosService = {
@@ -62,6 +57,9 @@ describe('AuthService', () => {
       create: jest.fn(),
       deleteMany: jest.fn(),
     },
+    sucursal: {
+      findFirst: jest.fn(),
+    },
   };
 
   beforeEach(async () => {
@@ -71,7 +69,6 @@ describe('AuthService', () => {
         { provide: UsuariosService, useValue: mockUsuariosService },
         { provide: JwtService, useValue: mockJwtService },
         { provide: ArchivosService, useValue: mockArchivosService },
-        { provide: MxDivisionesService, useValue: mockMxDivisionesService },
         { provide: PrismaService, useValue: mockPrismaService },
         { provide: MedicosService, useValue: mockMedicosService },
         { provide: EMAIL_QUEUE_TOKEN, useValue: mockEmailQueue },
@@ -398,23 +395,49 @@ describe('AuthService', () => {
       expect(mockArchivosService.saveFile).not.toHaveBeenCalled();
     });
 
-    it('should return 400 for invalid sucursalId', async () => {
+    it('should reject registration when sucursalId does not exist', async () => {
       mockUsuariosService.findByEmailOrPhone.mockResolvedValue(null);
-      mockMxDivisionesService.findById.mockRejectedValue(
-        new BadRequestException('Sucursal no encontrada'),
-      );
+      mockPrismaService.sucursal.findFirst.mockResolvedValue(null);
 
       await expect(
         service.register(validDto, {
           addressDoc: mockAddressDoc,
           identityDoc: mockIdentityDoc,
         }),
-      ).rejects.toThrow(BadRequestException);
+      ).rejects.toThrow(
+        new BadRequestException('Sucursal no válida o inactiva'),
+      );
+      expect(mockPrismaService.sucursal.findFirst).toHaveBeenCalledWith({
+        where: { id: validDto.sucursalId, activo: true },
+      });
     });
 
-    it('should register new user and enqueue verification email', async () => {
+    it('should reject registration when sucursalId is not active', async () => {
+      // The query filters by activo: true, so an inactive record resolves to null.
       mockUsuariosService.findByEmailOrPhone.mockResolvedValue(null);
-      mockMxDivisionesService.findById.mockResolvedValue({
+      mockPrismaService.sucursal.findFirst.mockResolvedValue(null);
+
+      const inactiveSucursalId = '00000000-0000-4000-8000-000000000002';
+
+      await expect(
+        service.register(
+          { ...validDto, sucursalId: inactiveSucursalId },
+          {
+            addressDoc: mockAddressDoc,
+            identityDoc: mockIdentityDoc,
+          },
+        ),
+      ).rejects.toThrow(
+        new BadRequestException('Sucursal no válida o inactiva'),
+      );
+      expect(mockPrismaService.sucursal.findFirst).toHaveBeenCalledWith({
+        where: { id: inactiveSucursalId, activo: true },
+      });
+    });
+
+    it('should register new user and enqueue verification email with active sucursal', async () => {
+      mockUsuariosService.findByEmailOrPhone.mockResolvedValue(null);
+      mockPrismaService.sucursal.findFirst.mockResolvedValue({
         id: '00000000-0000-4000-8000-000000000001',
         activo: true,
       });
@@ -469,7 +492,7 @@ describe('AuthService', () => {
 
     it('should rollback files on transaction failure', async () => {
       mockUsuariosService.findByEmailOrPhone.mockResolvedValue(null);
-      mockMxDivisionesService.findById.mockResolvedValue({
+      mockPrismaService.sucursal.findFirst.mockResolvedValue({
         id: '00000000-0000-4000-8000-000000000001',
         activo: true,
       });
@@ -496,7 +519,7 @@ describe('AuthService', () => {
 
     it('should throw BadRequestException when files are missing', async () => {
       mockUsuariosService.findByEmailOrPhone.mockResolvedValue(null);
-      mockMxDivisionesService.findById.mockResolvedValue({
+      mockPrismaService.sucursal.findFirst.mockResolvedValue({
         id: '00000000-0000-4000-8000-000000000001',
         activo: true,
       });

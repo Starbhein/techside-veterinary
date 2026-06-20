@@ -8,7 +8,6 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { UsuariosService } from '../usuarios/usuarios.service';
 import { ArchivosService } from '../archivos/archivos.service';
-import { MxDivisionesService } from '../mx-divisiones/mx-divisiones.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { MedicosService } from '../medicos/medicos.service';
 import { LoginDto } from './dto/login.dto';
@@ -23,7 +22,6 @@ export class AuthService {
   constructor(
     private readonly usuariosService: UsuariosService,
     private readonly archivosService: ArchivosService,
-    private readonly mxDivisionesService: MxDivisionesService,
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
     private readonly medicosService: MedicosService,
@@ -116,9 +114,10 @@ export class AuthService {
     }
 
     // 2. Validate sucursalId exists and is active
-    try {
-      await this.mxDivisionesService.findById(dto.sucursalId);
-    } catch {
+    const sucursal = await this.prisma.sucursal.findFirst({
+      where: { id: dto.sucursalId, activo: true },
+    });
+    if (!sucursal) {
       throw new BadRequestException('Sucursal no válida o inactiva');
     }
 

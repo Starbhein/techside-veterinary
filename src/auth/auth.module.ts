@@ -9,7 +9,6 @@ import { UsuariosModule } from '../usuarios/usuarios.module';
 import { PersonasModule } from '../personas/personas.module';
 import { ArchivosModule } from '../archivos/archivos.module';
 import { EmailModule } from '../email/email.module';
-import { MxDivisionesModule } from '../mx-divisiones/mx-divisiones.module';
 import { MedicosModule } from '../medicos/medicos.module';
 import { Env } from '../config/env.validation';
 
@@ -30,7 +29,6 @@ import { Env } from '../config/env.validation';
     PersonasModule,
     ArchivosModule,
     EmailModule,
-    MxDivisionesModule,
     MedicosModule,
   ],
   providers: [AuthService, JwtStrategy],
