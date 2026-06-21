@@ -32,7 +32,10 @@ export const buscarPagosQuerySchema = z.object({
     .refine((v) => v === undefined || /^-?\d+$/.test(v), {
       message: 'El parámetro de paginación no es válido.',
     })
-    .transform((v) => paginationInt(v, DEFAULT_OFFSET, DEFAULT_OFFSET)),
+    .transform((v) => parseInt(v ?? String(DEFAULT_OFFSET), 10))
+    .refine((n) => n >= 0, {
+      message: 'El parámetro de paginación no es válido.',
+    }),
 });
 
 export type BuscarPagosQueryDto = z.infer<typeof buscarPagosQuerySchema>;
