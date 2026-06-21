@@ -1,9 +1,8 @@
-import { Module, Provider } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { BullModule } from '@nestjs/bull';
-import { APP_GUARD } from '@nestjs/core';
 import { ScheduleModule } from '@nestjs/schedule';
-import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+// import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { envSchema, Env } from './config/env.validation';
 import { PrismaModule } from './prisma/prisma.module';
 import { MxDivisionesModule } from './mx-divisiones/mx-divisiones.module';
@@ -23,10 +22,10 @@ import { HistorialMedicoModule } from './historial-medico/historial-medico.modul
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
-const throttlerGuardProvider: Provider = {
-  provide: APP_GUARD,
-  useClass: ThrottlerGuard,
-};
+// const throttlerGuardProvider: Provider = {
+//   provide: APP_GUARD,
+//   useClass: ThrottlerGuard,
+// };
 
 @Module({
   imports: [
@@ -42,18 +41,18 @@ const throttlerGuardProvider: Provider = {
       }),
     }),
     ScheduleModule.forRoot(),
-    ThrottlerModule.forRoot([
-      {
-        name: 'default',
-        ttl: 60000,
-        limit: 10,
-      },
-      {
-        name: 'auth',
-        ttl: 900000,
-        limit: 5,
-      },
-    ]),
+    // ThrottlerModule.forRoot([
+    //   {
+    //     name: 'default',
+    //     ttl: 60000,
+    //     limit: 10,
+    //   },
+    //   {
+    //     name: 'auth',
+    //     ttl: 900000,
+    //     limit: 5,
+    //   },
+    // ]),
     PrismaModule,
     MxDivisionesModule,
     AuthModule,
@@ -71,6 +70,6 @@ const throttlerGuardProvider: Provider = {
     HistorialMedicoModule,
   ],
   controllers: [AppController],
-  providers: [AppService, throttlerGuardProvider],
+  providers: [AppService],
 })
 export class AppModule {}
