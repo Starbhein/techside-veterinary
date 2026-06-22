@@ -1,0 +1,23 @@
+graph TB
+    subgraph VPS["VPS / Servidor propio [PENDIENTE: proveedor/host]"]
+        direction TB
+        Proxy["Proxy / Balanceador [PENDIENTE]"]
+
+        subgraph Docker["Docker Compose - vetec-network"]
+            direction TB
+            API["api<br/>NestJS API<br/>puerto 3000"]
+            DB[("db<br/>PostgreSQL 15<br/>postgres_data")]
+            Redis[("redis<br/>Redis 7<br/>redis_data")]
+            Uploads[("./uploads<br/>bind mount")]
+        end
+    end
+
+    Cliente["Cliente (navegador/app)"]
+    Resend["Resend API<br/>correos electrónicos"]
+
+    Cliente --"HTTPS [PENDIENTE: dominio]"--> Proxy
+    Proxy --"proxy_pass http://api:3000"--> API
+    API --"DATABASE_URL"--> DB
+    API --"REDIS_URL"--> Redis
+    API --"archivos locales"--> Uploads
+    API --"RESEND_API_KEY"--> Resend
