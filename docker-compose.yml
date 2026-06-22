@@ -1,0 +1,68 @@
+# Orquestación local/producción ligera para Techside Veterinary
+# [Fuente: design.md]
+
+services:
+  db:
+    image: postgres:15
+    container_name: vetec-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-vetec}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-vetec_secret}
+      POSTGRES_DB: ${POSTGRES_DB:-vetec}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - vetec-network
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "${POSTGRES_USER:-vetec}", "-d", "${POSTGRES_DB:-vetec}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  redis:
+    image: redis:7
+    container_name: vetec-redis
+    volumes:
+      - redis_data:/data
+    networks:
+      - vetec-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: vetec-api
+    env_file:
+      - .env
+    ports:
+      - "${PORT:-3000}:${PORT:-3000}"
+    volumes:
+      - ./uploads:/app/uploads
+    networks:
+      - vetec-network
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:${PORT:-3000}/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+networks:
+  vetec-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:
