@@ -1,0 +1,81 @@
+graph LR
+    subgraph Clientes["Clientes / Frontend"]
+        WEB[Navegador / SPA]
+    end
+
+    subgraph API["API NestJS — techside-veterinary"]
+        MAIN[src/main.ts]
+        COMMON[src/common]
+        CONFIG[src/config]
+
+        subgraph ModulosFuncionales["Módulos funcionales"]
+            AUTH[auth]
+            USU[usuarios]
+            PER[personas]
+            MAS[mascotas]
+            CAT[catalogos]
+            MX[mx-divisiones]
+            CIT[citas]
+            MED[medicos]
+            REC[recetas]
+            CON[consultas]
+            PAG[pagos]
+            HIST[historial-medico]
+            ARC[archivos]
+            EMA[email]
+        end
+
+        PRISMA[PrismaService]
+        BULL[BullModule]
+        SCHED[ScheduleModule]
+    end
+
+    subgraph Externos["Servicios externos"]
+        PG[(PostgreSQL)]
+        RED[(Redis)]
+        RES[Resend API]
+    end
+
+    WEB -->|HTTP / JWT Bearer| MAIN
+    MAIN --> COMMON
+    MAIN --> CONFIG
+    MAIN --> ModulosFuncionales
+
+    AUTH --> COMMON
+    USU --> COMMON
+    PER --> COMMON
+    MAS --> COMMON
+    CAT --> COMMON
+    MX --> COMMON
+    CIT --> COMMON
+    MED --> COMMON
+    REC --> COMMON
+    CON --> COMMON
+    PAG --> COMMON
+    HIST --> COMMON
+    ARC --> COMMON
+    EMA --> COMMON
+
+    AUTH --> PRISMA
+    USU --> PRISMA
+    PER --> PRISMA
+    MAS --> PRISMA
+    CAT --> PRISMA
+    MX --> PRISMA
+    CIT --> PRISMA
+    MED --> PRISMA
+    REC --> PRISMA
+    CON --> PRISMA
+    PAG --> PRISMA
+    HIST --> PRISMA
+    ARC --> PRISMA
+    EMA --> PRISMA
+
+    EMA --> BULL
+    CIT --> SCHED
+
+    PRISMA --> PG
+    BULL --> RED
+    EMA --> RES
+
+    COMMON -->|JwtAuthGuard<br/>RolesGuard| AUTH
