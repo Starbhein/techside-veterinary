@@ -1,0 +1,104 @@
+% Plantilla LaTeX para el Manual Técnico y de Operación de techside-veterinary
+% Compatibilidad: pandoc con --pdf-engine=xelatex o --pdf-engine=lualatex
+\documentclass[11pt,oneside]{book}
+
+% Codificación e idioma
+\usepackage{fontspec}
+\usepackage{polyglossia}
+\setmainlanguage{spanish}
+\setotherlanguage{english}
+
+% Márgenes
+\usepackage[margin=2.5cm]{geometry}
+
+% Interlineado
+\usepackage{setspace}
+\onehalfspacing
+
+% Colores
+\usepackage{xcolor}
+\definecolor{vetecblue}{RGB}{0,82,147}
+\definecolor{vetecgray}{RGB}{80,80,80}
+
+% Encabezados y pies
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\textcolor{vetecgray}{Manual Técnico y de Operación — techside-veterinary}}
+\fancyhead[R]{\small\textcolor{vetecgray}{\leftmark}}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+% Numeración de secciones hasta profundidad 3
+\setcounter{secnumdepth}{3}
+\setcounter{tocdepth}{3}
+
+% Figuras
+\usepackage{graphicx}
+\usepackage{float}
+
+% Tablas
+\usepackage{longtable}
+\usepackage{booktabs}
+\usepackage{array}
+
+% Listados de código
+\usepackage{listings}
+\lstset{
+  basicstyle=\ttfamily\small,
+  breaklines=true,
+  frame=single,
+  backgroundcolor=\color{gray!10}
+}
+
+% Hipervínculos
+\usepackage{hyperref}
+\hypersetup{
+  colorlinks=true,
+  linkcolor=vetecblue,
+  urlcolor=vetecblue,
+  citecolor=vetecblue
+}
+
+% Metadata del documento
+$if(title)$
+\title{\textcolor{vetecblue}{$title$}}
+$endif$
+$if(subtitle)$
+\providecommand{\subtitle}[1]{\posttitle{\par\large#1\endgraf}}
+\subtitle{$subtitle$}
+$endif$
+$if(author)$
+\author{$for(author)$$author$$sep$ \\ $endfor$}
+$endif$
+$if(date)$
+\date{$date$}
+$endif$
+
+\begin{document}
+
+% Portada personalizada
+\begin{titlepage}
+  \centering
+  \vspace*{2cm}
+  {\Huge\bfseries\textcolor{vetecblue}{Manual Técnico y de Operación}\par}
+  \vspace{1cm}
+  {\LARGE Sistema de Información \texttt{techside-veterinary}\par}
+  \vspace{2cm}
+  {\Large Versión 0.0.1\par}
+  \vspace{0.5cm}
+  {\large 2026-06-22\par}
+  \vfill
+  {\large [PENDIENTE: nombre del equipo o autor]\par}
+  \vspace{0.5cm}
+  {\normalsize Elaborado conforme a la Guía del DNP Colombia\par}
+\end{titlepage}
+
+% Índice
+\tableofcontents
+\newpage
+
+% Contenido
+$body$
+
+\end{document}

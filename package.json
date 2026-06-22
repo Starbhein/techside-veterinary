@@ -27,7 +27,8 @@
     "manual:componentes": "mmdc -i docs/manual-tecnico/diagramas/componentes.mmd -o docs/manual-tecnico/diagramas/componentes.png",
     "manual:despliegue": "mmdc -i docs/manual-tecnico/diagramas/despliegue.mmd -o docs/manual-tecnico/diagramas/despliegue.png",
     "manual:diagrams": "pnpm run manual:componentes && pnpm run manual:despliegue",
-    "manual:pdf": "pandoc docs/manual-tecnico/plantillas/portada.md docs/manual-tecnico/01-descripcion-sistema.md docs/manual-tecnico/02-diseno-tecnico.md docs/manual-tecnico/03-despliegue-configuracion.md docs/manual-tecnico/04-resolucion-problemas.md -o docs/manual-tecnico/pdf/manual-tecnico.pdf --pdf-engine=xelatex --template=docs/manual-tecnico/plantillas/pandoc-template.tex --toc --toc-depth=3 --number-sections -V geometry:margin=2.5cm -V lang=es-MX"
+    "manual:pdf": "bash docs/manual-tecnico/scripts/generate-pdf.sh",
+    "manual:pdf:pandoc": "pandoc docs/manual-tecnico/plantillas/portada.md docs/manual-tecnico/01-descripcion-sistema.md docs/manual-tecnico/02-diseno-tecnico.md docs/manual-tecnico/03-despliegue-configuracion.md docs/manual-tecnico/04-resolucion-problemas.md -o docs/manual-tecnico/pdf/manual-tecnico.pdf --pdf-engine=xelatex --template=docs/manual-tecnico/plantillas/pandoc-template.tex --toc --toc-depth=3 --number-sections -V geometry:margin=2.5cm -V lang=es-MX"
   },
   "dependencies": {
     "@nestjs/bull": "^11.0.4",
@@ -76,6 +77,7 @@
     "eslint-plugin-prettier": "^5.2.2",
     "globals": "^17.0.0",
     "jest": "^30.0.0",
+    "md-to-pdf": "^5.2.5",
     "prettier": "^3.4.2",
     "source-map-support": "^0.5.21",
     "supertest": "^7.0.0",
