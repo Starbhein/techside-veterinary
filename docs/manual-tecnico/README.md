@@ -1,6 +1,6 @@
 # Manual Técnico y de Operación — Instrucciones de construcción
 
-Este directorio contiene el manual técnico del sistema `techside-veterinary`, elaborado conforme a la *Guía para la Elaboración del Manual Técnico y de Operación del Sistema* del DNP Colombia.
+Este directorio contiene el manual técnico del sistema `techside-veterinary`, elaborado conforme a la _Guía para la Elaboración del Manual Técnico y de Operación del Sistema_ del DNP Colombia.
 
 ## Estructura
 

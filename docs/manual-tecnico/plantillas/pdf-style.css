@@ -5,7 +5,7 @@
   margin: 2.5cm;
 
   @top-left {
-    content: "Manual Técnico y de Operación — techside-veterinary";
+    content: 'Manual Técnico y de Operación — techside-veterinary';
     font-size: 9pt;
     color: #505050;
   }
@@ -27,7 +27,7 @@
 }
 
 body {
-  font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   font-size: 11pt;
   line-height: 1.6;
   color: #222;
@@ -75,7 +75,7 @@ a {
 }
 
 code {
-  font-family: "Consolas", "Monaco", monospace;
+  font-family: 'Consolas', 'Monaco', monospace;
   background-color: #f4f4f4;
   padding: 0.1cm 0.2cm;
   border-radius: 3px;
@@ -98,7 +98,8 @@ table {
   font-size: 10pt;
 }
 
-th, td {
+th,
+td {
   border: 1px solid #bbb;
   padding: 0.25cm;
   text-align: left;
@@ -130,7 +131,8 @@ blockquote {
   color: #333;
 }
 
-ul, ol {
+ul,
+ol {
   margin: 0.3cm 0;
   padding-left: 1cm;
 }
