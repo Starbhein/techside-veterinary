@@ -24,7 +24,9 @@
     "db:deploy": "prisma migrate deploy",
     "db:seed": "prisma db seed",
     "db:studio": "prisma studio",
-    "manual:diagrams": "mmdc -i docs/manual-tecnico/diagramas/componentes.mmd -o docs/manual-tecnico/diagramas/componentes.png && mmdc -i docs/manual-tecnico/diagramas/despliegue.mmd -o docs/manual-tecnico/diagramas/despliegue.png",
+    "manual:componentes": "mmdc -i docs/manual-tecnico/diagramas/componentes.mmd -o docs/manual-tecnico/diagramas/componentes.png",
+    "manual:despliegue": "mmdc -i docs/manual-tecnico/diagramas/despliegue.mmd -o docs/manual-tecnico/diagramas/despliegue.png",
+    "manual:diagrams": "pnpm run manual:componentes && pnpm run manual:despliegue",
     "manual:pdf": "pandoc docs/manual-tecnico/plantillas/portada.md docs/manual-tecnico/01-descripcion-sistema.md docs/manual-tecnico/02-diseno-tecnico.md docs/manual-tecnico/03-despliegue-configuracion.md docs/manual-tecnico/04-resolucion-problemas.md -o docs/manual-tecnico/pdf/manual-tecnico.pdf --pdf-engine=xelatex --template=docs/manual-tecnico/plantillas/pandoc-template.tex --toc --toc-depth=3 --number-sections -V geometry:margin=2.5cm -V lang=es-MX"
   },
   "dependencies": {
