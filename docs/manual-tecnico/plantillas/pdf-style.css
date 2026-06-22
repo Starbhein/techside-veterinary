@@ -1,0 +1,167 @@
+/* Estilos para generación de PDF con md-to-pdf (fallback sin LaTeX) */
+
+@page {
+  size: A4;
+  margin: 2.5cm;
+
+  @top-left {
+    content: 'Manual Técnico y de Operación — techside-veterinary';
+    font-size: 9pt;
+    color: #505050;
+  }
+
+  @top-right {
+    content: string(doctitle);
+    font-size: 9pt;
+    color: #505050;
+  }
+
+  @bottom-center {
+    content: counter(page);
+    font-size: 10pt;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  font-size: 11pt;
+  line-height: 1.6;
+  color: #222;
+}
+
+h1 {
+  string-set: doctitle content();
+  color: #005293;
+  font-size: 22pt;
+  border-bottom: 2px solid #005293;
+  padding-bottom: 0.3cm;
+  margin-top: 1.5cm;
+  page-break-before: always;
+}
+
+h1:first-of-type {
+  page-break-before: avoid;
+}
+
+h2 {
+  color: #005293;
+  font-size: 16pt;
+  margin-top: 1cm;
+}
+
+h3 {
+  color: #333;
+  font-size: 13pt;
+  margin-top: 0.8cm;
+}
+
+h4 {
+  font-size: 12pt;
+  margin-top: 0.6cm;
+}
+
+p {
+  margin: 0.4cm 0;
+  text-align: justify;
+}
+
+a {
+  color: #005293;
+  text-decoration: none;
+}
+
+code {
+  font-family: 'Consolas', 'Monaco', monospace;
+  background-color: #f4f4f4;
+  padding: 0.1cm 0.2cm;
+  border-radius: 3px;
+  font-size: 10pt;
+}
+
+pre {
+  background-color: #f4f4f4;
+  padding: 0.4cm;
+  border-radius: 4px;
+  overflow-x: auto;
+  font-size: 9.5pt;
+  border: 1px solid #ddd;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.5cm 0;
+  font-size: 10pt;
+}
+
+th,
+td {
+  border: 1px solid #bbb;
+  padding: 0.25cm;
+  text-align: left;
+  vertical-align: top;
+}
+
+th {
+  background-color: #005293;
+  color: white;
+  font-weight: 600;
+}
+
+tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 0.5cm auto;
+}
+
+blockquote {
+  border-left: 4px solid #005293;
+  margin: 0.5cm 0;
+  padding: 0.3cm 0.6cm;
+  background-color: #f4f8fb;
+  color: #333;
+}
+
+ul,
+ol {
+  margin: 0.3cm 0;
+  padding-left: 1cm;
+}
+
+li {
+  margin: 0.15cm 0;
+}
+
+.cover-page {
+  text-align: center;
+  page-break-after: always;
+}
+
+.cover-page h1 {
+  color: #005293;
+  border: none;
+  font-size: 28pt;
+  margin-top: 3cm;
+  page-break-before: avoid;
+}
+
+.cover-page .subtitle {
+  font-size: 18pt;
+  color: #333;
+  margin-top: 0.5cm;
+}
+
+.cover-page .meta {
+  margin-top: 2cm;
+  font-size: 12pt;
+  color: #555;
+}

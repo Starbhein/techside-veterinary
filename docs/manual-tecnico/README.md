@@ -1,6 +1,6 @@
 # Manual Técnico y de Operación — Instrucciones de construcción
 
-Este directorio contiene el manual técnico del sistema `techside-veterinary`, elaborado conforme a la *Guía para la Elaboración del Manual Técnico y de Operación del Sistema* del DNP Colombia.
+Este directorio contiene el manual técnico del sistema `techside-veterinary`, elaborado conforme a la _Guía para la Elaboración del Manual Técnico y de Operación del Sistema_ del DNP Colombia.
 
 ## Estructura
 
@@ -53,12 +53,19 @@ mmdc -i docs/manual-tecnico/diagramas/despliegue.mmd -o docs/manual-tecnico/diag
 
 ## Generar el PDF
 
-### Requisitos del sistema
+### Opción recomendada (pandoc + LaTeX)
 
-- [pandoc](https://pandoc.org/installing.html)
-- [TeX Live](https://www.tug.org/texlive/) o similar con `xelatex` o `lualatex`
+Si están disponibles [pandoc](https://pandoc.org/installing.html) y un motor LaTeX como `xelatex` o `lualatex`:
 
-### Comando
+```bash
+pnpm run manual:pdf:pandoc
+```
+
+Esta opción utiliza la plantilla `docs/manual-tecnico/plantillas/pandoc-template.tex` y genera un PDF con índice, numeración y estilos tipográficos completos.
+
+### Opción por defecto en este entorno (md-to-pdf)
+
+Como fallback cuando no se dispone de LaTeX, el proyecto incluye `md-to-pdf` y un script que concatena la portada y los cuatro capítulos:
 
 ```bash
 pnpm run manual:pdf
@@ -66,13 +73,7 @@ pnpm run manual:pdf
 
 El PDF resultante se guarda en `docs/manual-tecnico/pdf/manual-tecnico.pdf`.
 
-### Alternativa sin LaTeX
-
-Si no se dispone de `xelatex`, se puede usar `md-to-pdf` (requiere instalación adicional):
-
-```bash
-npx md-to-pdf docs/manual-tecnico/0*.md --config-file docs/manual-tecnico/md-to-pdf-config.js
-```
+> **Nota:** `md-to-pdf` usa Puppeteer/Chromium. En entornos sin interfaz gráfica puede requerir las opciones `--no-sandbox`.
 
 ## Verificación de trazabilidad
 
