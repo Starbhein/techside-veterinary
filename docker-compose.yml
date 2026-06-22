@@ -14,7 +14,15 @@ services:
     networks:
       - vetec-network
     healthcheck:
-      test: ["CMD", "pg_isready", "-U", "${POSTGRES_USER:-vetec}", "-d", "${POSTGRES_DB:-vetec}"]
+      test:
+        [
+          'CMD',
+          'pg_isready',
+          '-U',
+          '${POSTGRES_USER:-vetec}',
+          '-d',
+          '${POSTGRES_DB:-vetec}',
+        ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -28,7 +36,7 @@ services:
     networks:
       - vetec-network
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ['CMD', 'redis-cli', 'ping']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -42,7 +50,7 @@ services:
     env_file:
       - .env
     ports:
-      - "${PORT:-3000}:${PORT:-3000}"
+      - '${PORT:-3000}:${PORT:-3000}'
     volumes:
       - ./uploads:/app/uploads
     networks:
@@ -53,7 +61,7 @@ services:
       redis:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:${PORT:-3000}/"]
+      test: ['CMD', 'wget', '-qO-', 'http://localhost:${PORT:-3000}/']
       interval: 30s
       timeout: 5s
       retries: 3
